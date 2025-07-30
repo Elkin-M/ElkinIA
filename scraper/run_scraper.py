@@ -13,6 +13,8 @@ from selenium.common.exceptions import (
     StaleElementReferenceException, TimeoutException, WebDriverException
 )
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
@@ -32,23 +34,14 @@ else:
     print(f"Carpeta de descargas existente: {DOWNLOAD_DIR}")
 
 chrome_options = Options()
-# Browserless Chrome ya es headless y no necesita estos argumentos.
-# Sin embargo, a veces son útiles para depuración o si la API de Browserless los procesa.
-# Eliminaremos los que son redundantes para Remote y los que causan problemas.
-# chrome_options.add_argument("--headless=new") # Ya lo maneja Browserless
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
-# chrome_options.add_argument("--disable-gpu") # No es necesario para remote
 chrome_options.add_argument("--window-size=1920,1080")
 chrome_options.add_argument("--start-maximized")
 chrome_options.add_argument("--ignore-certificate-errors")
 chrome_options.add_argument("--disable-extensions")
 
-# Para Browserless Chrome, no se especifica binary_location.
-# Te conectas a su endpoint de WebDriver.
-
 # Configuraciones para descarga automática
-# Estas preferencias se pasan al servidor remoto de Browserless
 prefs = {
     "download.default_directory": DOWNLOAD_DIR,
     "download.prompt_for_download": False,
@@ -58,24 +51,29 @@ prefs = {
 chrome_options.add_experimental_option("prefs", prefs)
 
 # --- Conexión al WebDriver Remoto (Browserless Chrome) ---
-# Browserless Chrome corre en el puerto 3000 por defecto dentro del contenedor.
-# Tu aplicación (Uvicorn) y Browserless Chrome están en el MISMO CONTENEDOR.
-# Por lo tanto, tu aplicación puede conectarse a Browserless a través de localhost:3000.
 BROWSERLESS_URL = os.getenv("BROWSERLESS_URL", "http://localhost:3000")
+MAX_RETRIES = 10  # Número máximo de intentos
+RETRY_DELAY = 5   # Retardo en segundos entre intentos
 
-try:
-    # IMPORTANTE: Conéctate al servidor Browserless Chrome usando webdriver.Remote
-    # La URL es la del servidor Browserless Chrome (que está en tu mismo contenedor).
-    # La parte "/webdriver" es el endpoint de Selenium en Browserless.
-    driver = webdriver.Remote(
-        command_executor=f"{BROWSERLESS_URL}/webdriver",
-        options=chrome_options
-    )
-    print(f"Conectado a Browserless Chrome en: {BROWSERLESS_URL}/webdriver")
-except Exception as e:
-    print(f"Error al conectar con Browserless Chrome: {e}")
-    # Es crucial que la aplicación falle si el driver no se puede configurar.
-    raise
+driver = None # Inicializa driver como None
+
+for i in range(MAX_RETRIES):
+    try:
+        print(f"Intentando conectar a Browserless Chrome (Intento {i+1}/{MAX_RETRIES})...")
+        driver = webdriver.Remote(
+            command_executor=f"{BROWSERLESS_URL}/webdriver",
+            options=chrome_options
+        )
+        print(f"Conectado a Browserless Chrome en: {BROWSERLESS_URL}/webdriver")
+        break # Si la conexión es exitosa, sale del bucle
+    except WebDriverException as e:
+        print(f"Error al conectar con Browserless Chrome: {e}")
+        if i < MAX_RETRIES - 1:
+            print(f"Reintentando en {RETRY_DELAY} segundos...")
+            time.sleep(RETRY_DELAY)
+        else:
+            print("Máximo de reintentos alcanzado. No se pudo conectar a Browserless Chrome.")
+            raise # Lanza la excepción si todos los reintentos fallan
 
 url = "http://senasofiaplus.edu.co/sofia-public/"
 
