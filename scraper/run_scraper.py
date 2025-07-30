@@ -1,102 +1,197 @@
-import os
-import re
-import shutil
-import time
-from datetime import datetime, timedelta
-
-import pandas as pd
-import sqlite3
-
 from selenium import webdriver
-from selenium.common.exceptions import (
-    ElementClickInterceptedException, NoSuchElementException, NoSuchFrameException,
-    StaleElementReferenceException, TimeoutException, WebDriverException
-)
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select, WebDriverWait
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException, ElementClickInterceptedException, StaleElementReferenceException, NoSuchFrameException
+import time
+import pandas as pd
+from datetime import datetime, timedelta
+import sqlite3
+import os, re, time, shutil
 
-# --- Configuración Inicial ---
+# --- OPCIÓN 1: Variable global con inicialización perezosa ---
+driver = None  # Solo declara la variable, no inicializa el driver
+
+def get_driver():
+    """
+    Función que retorna el driver, inicializándolo si es necesario
+    """
+    global driver
+    if driver is None:
+        print("Inicializando WebDriver...")
+        
+        # Configuración del driver
+        chrome_options = Options()
+        chrome_options.add_argument("--start-maximized")
+        chrome_options.add_argument("--disable-notifications")
+        
+        # Configuraciones para descarga automática
+        DOWNLOAD_DIR = os.path.join(os.getcwd(), "reportes_juicios")
+        if not os.path.exists(DOWNLOAD_DIR):
+            os.makedirs(DOWNLOAD_DIR)
+            print(f"Carpeta de descargas creada: {DOWNLOAD_DIR}")
+        
+        prefs = {
+            "download.default_directory": DOWNLOAD_DIR,
+            "download.prompt_for_download": False,
+            "download.directory_upgrade": True,
+            "safeBrowse.enabled": True
+        }
+        chrome_options.add_experimental_option("prefs", prefs)
+        
+        # Ruta del driver
+        ruta_driver = r"D:\Users\Lenovo\Documents\chrome-win\chromedriver.exe"
+        service = Service(ruta_driver)
+        
+        # Crear el driver
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        print("WebDriver inicializado correctamente")
+    
+    return driver
+
+def close_driver():
+    """
+    Función para cerrar el driver cuando ya no se necesite
+    """
+    global driver
+    if driver is not None:
+        driver.quit()
+        driver = None
+        print("WebDriver cerrado")
+
+
+def inicializar_driver():
+    """
+    Inicializa el WebDriver con todas las configuraciones necesarias
+    """
+    global driver
+    
+    if driver is not None:
+        print("⚠️ WebDriver ya está inicializado")
+        return driver
+    
+    print("🚀 Inicializando WebDriver...")
+    
+    try:
+        # Crear la carpeta de descargas si no existe
+        if not os.path.exists(DOWNLOAD_DIR):
+            os.makedirs(DOWNLOAD_DIR)
+            print(f"📁 Carpeta de descargas creada: {DOWNLOAD_DIR}")
+        else:
+            print(f"📁 Carpeta de descargas existente: {DOWNLOAD_DIR}")
+
+        # Configurar opciones de Chrome
+        chrome_options = Options()
+        chrome_options.add_argument("--start-maximized")
+        chrome_options.add_argument("--disable-notifications")
+        
+        # Configuraciones para descarga automática
+        prefs = {
+            "download.default_directory": DOWNLOAD_DIR,
+            "download.prompt_for_download": False,
+            "download.directory_upgrade": True,
+            "safeBrowse.enabled": True
+        }
+        chrome_options.add_experimental_option("prefs", prefs)
+
+        # Ruta del driver
+        ruta_driver = r"D:\Users\Lenovo\Documents\chrome-win\chromedriver.exe"
+        service = Service(ruta_driver)
+
+        # Crear el driver
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        print("✅ WebDriver inicializado correctamente")
+        
+        return driver
+        
+    except Exception as e:
+        print(f"❌ Error al inicializar WebDriver: {e}")
+        raise
+
+def cerrar_driver():
+    """
+    Cierra el WebDriver si está activo
+    """
+    global driver
+    if driver is not None:
+        try:
+            driver.quit()
+            driver = None
+            print("🔒 WebDriver cerrado correctamente")
+        except Exception as e:
+            print(f"⚠️ Error al cerrar WebDriver: {e}")
+            driver = None
+
+# --- OPCIÓN 2: Clase para manejar el WebDriver ---
+class WebDriverManager:
+    def __init__(self):
+        self.driver = None
+        self.download_dir = os.path.join(os.getcwd(), "reportes_juicios")
+        self.ruta_driver = r"D:\Users\Lenovo\Documents\chrome-win\chromedriver.exe"
+        
+    def get_driver(self):
+        """Retorna el driver, inicializándolo si es necesario"""
+        if self.driver is None:
+            self._initialize_driver()
+        return self.driver
+    
+    def _initialize_driver(self):
+        """Inicializa el WebDriver con todas las configuraciones"""
+        print("Inicializando WebDriver...")
+        
+        # Crear carpeta de descargas si no existe
+        if not os.path.exists(self.download_dir):
+            os.makedirs(self.download_dir)
+            print(f"Carpeta de descargas creada: {self.download_dir}")
+        
+        # Configurar opciones de Chrome
+        chrome_options = Options()
+        chrome_options.add_argument("--start-maximized")
+        chrome_options.add_argument("--disable-notifications")
+        
+        prefs = {
+            "download.default_directory": self.download_dir,
+            "download.prompt_for_download": False,
+            "download.directory_upgrade": True,
+            "safeBrowse.enabled": True
+        }
+        chrome_options.add_experimental_option("prefs", prefs)
+        
+        # Crear el driver
+        service = Service(self.ruta_driver)
+        self.driver = webdriver.Chrome(service=service, options=chrome_options)
+        print("WebDriver inicializado correctamente")
+    
+    def close_driver(self):
+        """Cierra el driver si está activo"""
+        if self.driver is not None:
+            self.driver.quit()
+            self.driver = None
+            print("WebDriver cerrado")
+    
+    def restart_driver(self):
+        """Reinicia el driver (útil para recuperarse de errores)"""
+        self.close_driver()
+        self._initialize_driver()
+
+# --- Configuración Global ---
 estado = ""
 ficha = ""
-
-# Construye la ruta de descarga relativa al directorio de trabajo actual
-DOWNLOAD_DIR = os.path.join(os.getcwd(), "reportes_juicios")
-
-# Crear la carpeta si no existe
-if not os.path.exists(DOWNLOAD_DIR):
-    os.makedirs(DOWNLOAD_DIR)
-    print(f"Carpeta de descargas creada: {DOWNLOAD_DIR}")
-else:
-    print(f"Carpeta de descargas existente: {DOWNLOAD_DIR}")
-
-chrome_options = Options()
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument("--window-size=1920,1080")
-chrome_options.add_argument("--start-maximized")
-chrome_options.add_argument("--ignore-certificate-errors")
-chrome_options.add_argument("--disable-extensions")
-
-# Configuraciones para descarga automática
-prefs = {
-    "download.default_directory": DOWNLOAD_DIR,
-    "download.prompt_for_download": False,
-    "download.directory_upgrade": True,
-    "safeBrowse.enabled": True # Corrección: safeBrowse.enabled a safeBrowse.enabled
-}
-chrome_options.add_experimental_option("prefs", prefs)
-
-# --- Conexión al WebDriver Remoto (Browserless Chrome) ---
-# Se asegura de obtener la URL de Browserless de las variables de entorno
-# Si no está definida, usa "http://localhost:3000" como valor por defecto (para desarrollo local)
-BROWSERLESS_URL = os.getenv("BROWSERLESS_URL", "http://localhost:3000")
-MAX_RETRIES = 10  # Número máximo de intentos
-RETRY_DELAY = 5   # Retardo en segundos entre intentos
-
-driver = None # Inicializa driver como None
-
-for i in range(MAX_RETRIES):
-    try:
-        print(f"Intentando conectar a Browserless Chrome (Intento {i+1}/{MAX_RETRIES})...")
-        driver = webdriver.Remote(
-            command_executor=f"{BROWSERLESS_URL}/webdriver",
-            options=chrome_options
-        )
-        print(f"Conectado a Browserless Chrome en: {BROWSERLESS_URL}/webdriver")
-        break # Si la conexión es exitosa, sale del bucle
-    except WebDriverException as e:
-        print(f"Error al conectar con Browserless Chrome: {e}")
-        if i < MAX_RETRIES - 1:
-            print(f"Reintentando en {RETRY_DELAY} segundos...")
-            time.sleep(RETRY_DELAY)
-        else:
-            print("Máximo de reintentos alcanzado. No se pudo conectar a Browserless Chrome.")
-            raise # Lanza la excepción si todos los reintentos fallan
-
-# Si el bucle termina y driver sigue siendo None, significa que no se pudo conectar
-# Esto es redundante debido al 'raise' en el 'else' del bucle, pero se mantiene por claridad
-if driver is None:
-    raise Exception("No se pudo inicializar el WebDriver después de múltiples reintentos.")
-
-
 url = "http://senasofiaplus.edu.co/sofia-public/"
-
-# Aquí continuarías con el resto de tu lógica de Selenium, por ejemplo:
-# driver.get(url)
-# ... etc.
-
-# Credenciales de inicio de sesión
 usuario_login = "1050962935"
 contrasena_login = "PapaJose92805331050*"
 
-# --- Configuración de la Base de Datos SQLite ---
+# Instanciar el manager del driver (OPCIÓN 2)
+driver_manager = WebDriverManager()
+
+# --- Base de Datos SQLite ---
 DB_NAME = 'sena_datos.db'
-conn = None # Se inicializará la conexión más tarde
-cursor = None # Se inicializará el cursor más tarde
+conn = None
+
 
 # --- Definición de XPaths y IDs ---
 # XPaths para el inicio de sesión
@@ -1055,15 +1150,31 @@ def esperar_nuevo_archivo(dir_path: str, existentes: set, timeout=60):
 
 
 def ejecutar_scraper():
-    connect_db()
-    create_tables()
+    """
+    Función principal que ejecuta todo el proceso de scraping
+    El WebDriver se inicializa SOLO cuando se llama esta función
+    """
+    global driver
     
     try:
+        # 🚀 AQUÍ SE INICIALIZA EL NAVEGADOR por primera vez
+        print("=" * 60)
+        print("🎯 INICIANDO PROCESO DE SCRAPING")
+        print("=" * 60)
+        
+        # Inicializar el driver
+        inicializar_driver()
+        
+        # Conectar a la base de datos
+        connect_db()
+        create_tables()
+        
         # 1. Iniciar sesión y seleccionar rol
+        print("\n🔐 Iniciando sesión...")
         iniciar_sesion()
 
         driver.switch_to.default_content()
-        print(f"Seleccionando el rol de '{XPATH_MENU_GESTION_DESARROLLO_CURRICULAR}'...")
+        print(f"👤 Seleccionando el rol de '{XPATH_MENU_GESTION_DESARROLLO_CURRICULAR}'...")
 
         select_element = WebDriverWait(driver, 20).until(
             EC.visibility_of_element_located((By.XPATH, XPATH_SELECT_ROL_DROPDOWN))
@@ -1071,70 +1182,71 @@ def ejecutar_scraper():
         select_rol = Select(select_element)
         time.sleep(2)
         select_rol.select_by_visible_text(XPATH_MENU_GESTION_DESARROLLO_CURRICULAR)
-        print(f"Rol '{XPATH_MENU_GESTION_DESARROLLO_CURRICULAR}' seleccionado exitosamente.")
+        print(f"✅ Rol '{XPATH_MENU_GESTION_DESARROLLO_CURRICULAR}' seleccionado exitosamente.")
 
         # 2. Navegación por el menú
-        print("Navegando a 'Ejecución a la formación'...")
+        print("\n🧭 Navegando por el menú...")
+        print("📂 Navegando a 'Ejecución a la formación'...")
         llamar_click_solo(XPATH_MENU_EJECUCION_FORMACION_GDC)
         time.sleep(1)
 
-        print("Navegando a 'Administrar Ruta de Aprendizaje'...")
+        print("📂 Navegando a 'Administrar Ruta de Aprendizaje'...")
         llamar_click_solo(XPATH_MENU_ADMINISTRAR_RUTA_APRENDIZAJE_GDC)
         time.sleep(1)
 
-        print("Navegando a 'Reportes'...")
+        print("📊 Navegando a 'Reportes'...")
         llamar_click_solo(XPATH_MENU_REPORTES_GDC)
         time.sleep(1)
 
-        print("Navegando a 'Reportes de Juicios de Evaluación'...")
+        print("⚖️ Navegando a 'Reportes de Juicios de Evaluación'...")
         llamar_click_solo(XPATH_MENU_REPORTES_JUICIOS_EVALUACION_GDC)
         time.sleep(3)
 
         # 3. Cambiar a iframe 'contenido'
         driver.switch_to.default_content()
         try:
-            print("Intentando cambiar a iframe 'contenido'...")
+            print("\n🖼️ Intentando cambiar a iframe 'contenido'...")
             WebDriverWait(driver, 15).until(
                 EC.frame_to_be_available_and_switch_to_it(IFRAME_CONTENIDO_ID)
             )
-            print("Cambiado a iframe 'contenido' exitosamente.")
+            print("✅ Cambiado a iframe 'contenido' exitosamente.")
         except Exception as iframe_e:
-            print(f"ERROR: No se pudo cambiar al iframe 'contenido': {iframe_e}")
+            print(f"❌ ERROR: No se pudo cambiar al iframe 'contenido': {iframe_e}")
             raise
 
         esperar_cualquier_overlay_desaparecer(timeout=20)
 
-        print("Haciendo clic en el botón para abrir el buscador de fichas...")
+        print("🔍 Haciendo clic en el botón para abrir el buscador de fichas...")
         llamar_click_solo(XPATH_BOTON_ABRIR_BUSCADOR_FICHAS, timeout=30, by_method=By.ID)
 
         # 4. Cambiar al iframe anidado del modal
-        print("Buscando iframe anidado del modal...")
+        print("\n🖼️ Buscando iframe anidado del modal...")
         modal_iframe_found = False
         for intento in range(1, 4):
-            print(f"Intento {intento}/3 para cambiar al iframe '{IFRAME_MODAL_ID}'")
+            print(f"🔄 Intento {intento}/3 para cambiar al iframe '{IFRAME_MODAL_ID}'")
             try:
                 WebDriverWait(driver, 15).until(
                     EC.frame_to_be_available_and_switch_to_it(IFRAME_MODAL_ID)
                 )
-                print(f"¡Éxito! Cambiado al iframe del modal: '{IFRAME_MODAL_ID}'.")
+                print(f"✅ ¡Éxito! Cambiado al iframe del modal: '{IFRAME_MODAL_ID}'.")
                 modal_iframe_found = True
                 break
             except TimeoutException:
-                print(f"Timeout: no se encontró el iframe '{IFRAME_MODAL_ID}'. Reintentando...")
+                print(f"⏰ Timeout: no se encontró el iframe '{IFRAME_MODAL_ID}'. Reintentando...")
                 driver.switch_to.parent_frame()
                 time.sleep(3)
             except Exception as e:
-                print(f"Error inesperado al cambiar al iframe del modal: {e}")
+                print(f"❌ Error inesperado al cambiar al iframe del modal: {e}")
                 driver.switch_to.parent_frame()
                 time.sleep(3)
 
         if not modal_iframe_found:
-            raise Exception(f"Fallo crítico: No se pudo cambiar al iframe del modal '{IFRAME_MODAL_ID}'.")
+            raise Exception(f"💥 Fallo crítico: No se pudo cambiar al iframe del modal '{IFRAME_MODAL_ID}'.")
 
         # 5. Aplicar filtros
-        print("Aplicando filtros de búsqueda...")
+        print("\n🔧 Aplicando filtros de búsqueda...")
         current_date = datetime.now()
-        fecha_inicio_busqueda = current_date.strftime("%d/%m/%Y")
+        fecha_inicio_busqueda = "03/07/2025"
 
         dep_busqueda = "BOLÍVAR"
         mun_busqueda = "CARTAGENA"
@@ -1161,31 +1273,38 @@ def ejecutar_scraper():
         )
 
         # 6. Mapear fichas
-        print("Mapeando todas las fichas...")
+        print("\n🗺️ Mapeando todas las fichas...")
         global df_fichas_mapeadas
         df_fichas_mapeadas = manejar_paginacion_modal(filtros_actuales)
 
         if not df_fichas_mapeadas.empty:
-            print("\n--- Todas las Fichas Mapeadas ---")
+            print("\n📋 --- Todas las Fichas Mapeadas ---")
             print(df_fichas_mapeadas.to_string(index=False))
         else:
             print("⚠️ No se encontraron fichas con los filtros aplicados.")
 
         # 7. Descargar juicios por ficha
+        print("\n⬇️ Descargando juicios de evaluación...")
         descargar_juicios_evaluacion()
+        
+        print("\n🎉 ¡PROCESO COMPLETADO EXITOSAMENTE!")
 
     except Exception as e:
-        print(f"\n❌ Error general durante la ejecución: {e}")
+        print(f"\n💥 ❌ Error general durante la ejecución: {e}")
         try:
-            driver.save_screenshot("error_scraper.png")
-            print("🖼️ Captura guardada como 'error_scraper.png'")
+            if driver is not None:
+                driver.save_screenshot("error_scraper.png")
+                print("🖼️ Captura guardada como 'error_scraper.png'")
         except:
-            print("No se pudo guardar la captura del error.")
+            print("📷 No se pudo guardar la captura del error.")
+    
     finally:
-        print("\n🧹 Cerrando navegador y conexión a base de datos...")
-        driver.quit()
+        print("\n🧹 Limpieza final...")
+        # Cerrar navegador
+        cerrar_driver()
+        # Cerrar conexión a base de datos
         close_db()
-
+        print("✅ Proceso finalizado")
 
 
 

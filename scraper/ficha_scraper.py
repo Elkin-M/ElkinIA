@@ -21,7 +21,7 @@ filtros = {
     "municipio": "CARTAGENA",
     "jornada": "DIURNA",
     "codigo_ficha": None,
-    "fecha_inicial": datetime.now().strftime("%d/%m/%Y"),
+    "fecha_inicial": "03/07/2025",
     "fecha_final": None
 }
 
