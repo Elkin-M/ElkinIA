@@ -13,8 +13,6 @@ from selenium.common.exceptions import (
     StaleElementReferenceException, TimeoutException, WebDriverException
 )
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
@@ -24,7 +22,6 @@ estado = ""
 ficha = ""
 
 # Construye la ruta de descarga relativa al directorio de trabajo actual
-# os.getcwd() en Render es /opt/render/project/src/
 DOWNLOAD_DIR = os.path.join(os.getcwd(), "reportes_juicios")
 
 # Crear la carpeta si no existe
@@ -35,49 +32,55 @@ else:
     print(f"Carpeta de descargas existente: {DOWNLOAD_DIR}")
 
 chrome_options = Options()
-# Argumentos necesarios para ejecutar Chrome en un entorno headless (sin interfaz gráfica)
-chrome_options.add_argument("--headless=new") # Opción más moderna para headless
-chrome_options.add_argument("--no-sandbox") # Necesario en entornos Docker/Linux por seguridad
-chrome_options.add_argument("--disable-dev-shm-usage") # Evita problemas de memoria compartida en Docker
-chrome_options.add_argument("--disable-gpu") # Deshabilita la GPU si no está disponible (común en Docker)
-chrome_options.add_argument("--window-size=1920,1080") # Tamaño de ventana para el renderizado
-chrome_options.add_argument("--start-maximized") # Inicia maximizado (aunque en headless es menos relevante)
-chrome_options.add_argument("--ignore-certificate-errors") # Ignora errores de certificado SSL
-chrome_options.add_argument("--disable-extensions") # Deshabilita extensiones
+# Browserless Chrome ya es headless y no necesita estos argumentos.
+# Sin embargo, a veces son útiles para depuración o si la API de Browserless los procesa.
+# Eliminaremos los que son redundantes para Remote y los que causan problemas.
+# chrome_options.add_argument("--headless=new") # Ya lo maneja Browserless
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
+# chrome_options.add_argument("--disable-gpu") # No es necesario para remote
+chrome_options.add_argument("--window-size=1920,1080")
+chrome_options.add_argument("--start-maximized")
+chrome_options.add_argument("--ignore-certificate-errors")
+chrome_options.add_argument("--disable-extensions")
 
-# **LA LÍNEA CRÍTICA CORREGIDA:**
-# Indica a Selenium la ubicación del binario de Chrome en la imagen 'browserless/chrome'.
-# La imagen 'browserless/chrome' usa 'google-chrome-stable'.
-chrome_options.binary_location = "/usr/bin/google-chrome-stable"
+# Para Browserless Chrome, no se especifica binary_location.
+# Te conectas a su endpoint de WebDriver.
 
 # Configuraciones para descarga automática
+# Estas preferencias se pasan al servidor remoto de Browserless
 prefs = {
     "download.default_directory": DOWNLOAD_DIR,
-    "download.prompt_for_download": False, # No preguntar dónde guardar
+    "download.prompt_for_download": False,
     "download.directory_upgrade": True,
-    "safeBrowse.enabled": True # Nombre correcto para la preferencia de Safe Browse
+    "safeBrowse.enabled": True
 }
 chrome_options.add_experimental_option("prefs", prefs)
 
-# --- Inicialización del WebDriver ---
+# --- Conexión al WebDriver Remoto (Browserless Chrome) ---
+# Browserless Chrome corre en el puerto 3000 por defecto dentro del contenedor.
+# Tu aplicación (Uvicorn) y Browserless Chrome están en el MISMO CONTENEDOR.
+# Por lo tanto, tu aplicación puede conectarse a Browserless a través de localhost:3000.
+BROWSERLESS_URL = os.getenv("BROWSERLESS_URL", "http://localhost:3000")
+
 try:
-    # IMPORTANTE: Ya NO usamos ChromeDriverManager().install()
-    # La imagen 'browserless/chrome' ya incluye chromedriver y lo tiene en el PATH.
-    # Simplemente inicializamos un servicio sin especificar la ruta del ejecutable.
-    service = Service()
-    print("Chromedriver configurado para usar el driver provisto por la imagen Docker.")
+    # IMPORTANTE: Conéctate al servidor Browserless Chrome usando webdriver.Remote
+    # La URL es la del servidor Browserless Chrome (que está en tu mismo contenedor).
+    # La parte "/webdriver" es el endpoint de Selenium en Browserless.
+    driver = webdriver.Remote(
+        command_executor=f"{BROWSERLESS_URL}/webdriver",
+        options=chrome_options
+    )
+    print(f"Conectado a Browserless Chrome en: {BROWSERLESS_URL}/webdriver")
 except Exception as e:
-    print(f"Error al configurar Chromedriver: {e}")
+    print(f"Error al conectar con Browserless Chrome: {e}")
     # Es crucial que la aplicación falle si el driver no se puede configurar.
     raise
 
-# Inicializa el WebDriver de Chrome con las opciones y el servicio configurados.
-# Este driver se ejecutará en el entorno del contenedor Docker donde Chrome está disponible.
-driver = webdriver.Chrome(service=service, options=chrome_options)
 url = "http://senasofiaplus.edu.co/sofia-public/"
 
 # Resto de tu código para interactuar con el navegador
-# ... (tu código para descargar_juicio_evaluacion_por_ficha, etc.)
+# ... (tus funciones descargar_juicio_evaluacion_por_ficha, etc.)
 # Credenciales de inicio de sesión
 usuario_login = "1050962935"
 contrasena_login = "PapaJose92805331050*"
