@@ -12,13 +12,14 @@ import time
 import pandas as pd
 from datetime import datetime, timedelta
 import sqlite3
-import os, re, time, shutil   # ← asegúrate de tenerlos al inicio del script
-import os
+import os, re, shutil
 
 # --- Configuración Inicial ---
 estado = ""
 ficha = ""
+# Construye la ruta de descarga relativa al directorio de trabajo actual
 DOWNLOAD_DIR = os.path.join(os.getcwd(), "reportes_juicios")
+
 # Crear la carpeta si no existe
 if not os.path.exists(DOWNLOAD_DIR):
     os.makedirs(DOWNLOAD_DIR)
@@ -29,31 +30,37 @@ else:
 chrome_options = Options()
 chrome_options.add_argument("--start-maximized")
 chrome_options.add_argument("--disable-notifications")
-chrome_options.add_argument("--headless")
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument("--disable-gpu") # Añadir por si acaso, aunque --headless ya lo implica en gran medida
-chrome_options.add_argument("--window-size=1920,1080")
+chrome_options.add_argument("--headless") # Ejecuta Chrome sin interfaz gráfica
+chrome_options.add_argument("--no-sandbox") # Necesario para entornos Linux sin sandboxing
+chrome_options.add_argument("--disable-dev-shm-usage") # Evita problemas de memoria en contenedores Docker
+chrome_options.add_argument("--disable-gpu") # Deshabilita la aceleración por hardware (útil en headless)
+chrome_options.add_argument("--window-size=1920,1080") # Define un tamaño de ventana para el modo headless
+
+# **LA LÍNEA CRÍTICA AÑADIDA/CORREGIDA:**
+# Indica a Selenium la ubicación del binario de Chrome en el entorno de Render.
+# Esta es la ruta estándar cuando Chrome se instala vía apt-get.
+chrome_options.binary_location = "/usr/bin/google-chrome"
+
+
 # Configuraciones para descarga automática
 prefs = {
     "download.default_directory": DOWNLOAD_DIR,
     "download.prompt_for_download": False, # No preguntar dónde guardar
     "download.directory_upgrade": True,
-    "safeBrowse.enabled": True
+    "safeBrowse.enabled": True # Corrección: el nombre correcto de la preferencia es 'safeBrowse.enabled'
 }
 chrome_options.add_experimental_option("prefs", prefs)
 
 try:
+    # webdriver_manager se encarga de descargar el chromedriver compatible.
     service = Service(ChromeDriverManager().install())
     print("Chromedriver instalado y configurado correctamente.")
 except Exception as e:
     print(f"Error al instalar Chromedriver: {e}")
+    # Es crucial que la aplicación falle si el driver no se puede configurar.
     raise
 
-#Vercion anterior de chromedriver
-# Asegúrate de que esta ruta sea correcta para tu chromedriver.exe
-#ruta_driver = r"D:\Users\Lenovo\Documents\chrome-win\chromedriver.exe"
-#service = Service(ruta_driver)
+# Inicializa el WebDriver de Chrome con las opciones y el servicio configurados.
 driver = webdriver.Chrome(service=service, options=chrome_options)
 url = "http://senasofiaplus.edu.co/sofia-public/"
 
