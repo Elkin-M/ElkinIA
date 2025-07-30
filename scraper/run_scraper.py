@@ -7,6 +7,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException, ElementClickInterceptedException, StaleElementReferenceException, NoSuchFrameException
+from webdriver_manager.chrome import ChromeDriverManager
 import time
 import pandas as pd
 from datetime import datetime, timedelta
@@ -37,9 +38,17 @@ prefs = {
 }
 chrome_options.add_experimental_option("prefs", prefs)
 
+try:
+    service = Service(ChromeDriverManager().install())
+    print("Chromedriver instalado y configurado correctamente.")
+except Exception as e:
+    print(f"Error al instalar Chromedriver: {e}")
+    raise
+
+#Vercion anterior de chromedriver
 # Asegúrate de que esta ruta sea correcta para tu chromedriver.exe
-ruta_driver = r"D:\Users\Lenovo\Documents\chrome-win\chromedriver.exe"
-service = Service(ruta_driver)
+#ruta_driver = r"D:\Users\Lenovo\Documents\chrome-win\chromedriver.exe"
+#service = Service(ruta_driver)
 driver = webdriver.Chrome(service=service, options=chrome_options)
 url = "http://senasofiaplus.edu.co/sofia-public/"
 
