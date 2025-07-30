@@ -21,6 +21,6 @@ apt-get install -y google-chrome-stable
 
 # Instalar las dependencias de Python (tu requirements.txt)
 echo "Instalando dependencias de Python..."
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 
 echo "Script de construcción finalizado."
