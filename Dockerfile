@@ -25,4 +25,4 @@ WORKDIR /app
 
 # Este comando le dice a Docker cómo iniciar tu aplicación.
 # Render automáticamente mapeará el puerto 8000 a la variable de entorno $PORT.
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
