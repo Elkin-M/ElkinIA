@@ -46,11 +46,13 @@ prefs = {
     "download.default_directory": DOWNLOAD_DIR,
     "download.prompt_for_download": False,
     "download.directory_upgrade": True,
-    "safeBrowse.enabled": True
+    "safeBrowse.enabled": True # Corrección: safeBrowse.enabled a safeBrowse.enabled
 }
 chrome_options.add_experimental_option("prefs", prefs)
 
 # --- Conexión al WebDriver Remoto (Browserless Chrome) ---
+# Se asegura de obtener la URL de Browserless de las variables de entorno
+# Si no está definida, usa "http://localhost:3000" como valor por defecto (para desarrollo local)
 BROWSERLESS_URL = os.getenv("BROWSERLESS_URL", "http://localhost:3000")
 MAX_RETRIES = 10  # Número máximo de intentos
 RETRY_DELAY = 5   # Retardo en segundos entre intentos
@@ -75,10 +77,18 @@ for i in range(MAX_RETRIES):
             print("Máximo de reintentos alcanzado. No se pudo conectar a Browserless Chrome.")
             raise # Lanza la excepción si todos los reintentos fallan
 
+# Si el bucle termina y driver sigue siendo None, significa que no se pudo conectar
+# Esto es redundante debido al 'raise' en el 'else' del bucle, pero se mantiene por claridad
+if driver is None:
+    raise Exception("No se pudo inicializar el WebDriver después de múltiples reintentos.")
+
+
 url = "http://senasofiaplus.edu.co/sofia-public/"
 
-# Resto de tu código para interactuar con el navegador
-# ... (tus funciones descargar_juicio_evaluacion_por_ficha, etc.)
+# Aquí continuarías con el resto de tu lógica de Selenium, por ejemplo:
+# driver.get(url)
+# ... etc.
+
 # Credenciales de inicio de sesión
 usuario_login = "1050962935"
 contrasena_login = "PapaJose92805331050*"
