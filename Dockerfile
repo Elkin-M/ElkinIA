@@ -1,5 +1,4 @@
-# Usa una imagen base de Docker que ya tiene Chrome preinstalado.
-# browserless/chrome es excelente porque está optimizada para scraping.
+# Usa una imagen base de Docker que ya tiene Chrome preinstalado y optimizada para scraping.
 FROM browserless/chrome:latest
 
 # Establece el directorio de trabajo dentro del contenedor Docker.
@@ -14,15 +13,21 @@ COPY backend/ ./backend/
 COPY scraper/ ./scraper/
 
 # Mueve el directorio de trabajo al lugar donde está requirements.txt para instalar las dependencias.
+# Asegúrate de que las rutas dentro del contenedor sean correctas.
 WORKDIR /app/backend
 
 # Instala las dependencias de Python listadas en requirements.txt.
-# Render usa Poetry por defecto, pero con un Dockerfile, podemos usar pip directamente.
+# Esto instala las dependencias DENTRO del contenedor Docker.
 RUN pip install -r requirements.txt
 
 # Regresa al directorio raíz de la aplicación para el comando de inicio final.
 WORKDIR /app
 
-# Este comando le dice a Docker cómo iniciar tu aplicación.
-# Render automáticamente mapeará el puerto 8000 a la variable de entorno $PORT.
+# Expone el puerto que Uvicorn usará. Render mapeará $PORT a este puerto.
+EXPOSE 8000
+
+# Este comando define el punto de entrada para el contenedor.
+# Cuando el contenedor se inicie, ejecutará uvicorn.
+# Render, sin embargo, seguirá usando su propio "Start Command" en paralelo o en su lugar,
+# por lo que las instalaciones de Python en el "Build Command" de Render son necesarias.
 ENTRYPOINT ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

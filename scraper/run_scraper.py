@@ -1,23 +1,30 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException, ElementClickInterceptedException, StaleElementReferenceException, NoSuchFrameException
-from webdriver_manager.chrome import ChromeDriverManager
+import os
+import re
+import shutil
 import time
-import pandas as pd
 from datetime import datetime, timedelta
+
+import pandas as pd
 import sqlite3
-import os, re, shutil
+
+from selenium import webdriver
+from selenium.common.exceptions import (
+    ElementClickInterceptedException, NoSuchElementException, NoSuchFrameException,
+    StaleElementReferenceException, TimeoutException, WebDriverException
+)
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select, WebDriverWait
 
 # --- Configuración Inicial ---
 estado = ""
 ficha = ""
+
 # Construye la ruta de descarga relativa al directorio de trabajo actual
+# os.getcwd() en Render es /opt/render/project/src/
 DOWNLOAD_DIR = os.path.join(os.getcwd(), "reportes_juicios")
 
 # Crear la carpeta si no existe
@@ -28,42 +35,49 @@ else:
     print(f"Carpeta de descargas existente: {DOWNLOAD_DIR}")
 
 chrome_options = Options()
-chrome_options.add_argument("--start-maximized")
-chrome_options.add_argument("--disable-notifications")
-chrome_options.add_argument("--headless") # Ejecuta Chrome sin interfaz gráfica
-chrome_options.add_argument("--no-sandbox") # Necesario para entornos Linux sin sandboxing
-chrome_options.add_argument("--disable-dev-shm-usage") # Evita problemas de memoria en contenedores Docker
-chrome_options.add_argument("--disable-gpu") # Deshabilita la aceleración por hardware (útil en headless)
-chrome_options.add_argument("--window-size=1920,1080") # Define un tamaño de ventana para el modo headless
+# Argumentos necesarios para ejecutar Chrome en un entorno headless (sin interfaz gráfica)
+chrome_options.add_argument("--headless=new") # Opción más moderna para headless
+chrome_options.add_argument("--no-sandbox") # Necesario en entornos Docker/Linux por seguridad
+chrome_options.add_argument("--disable-dev-shm-usage") # Evita problemas de memoria compartida en Docker
+chrome_options.add_argument("--disable-gpu") # Deshabilita la GPU si no está disponible (común en Docker)
+chrome_options.add_argument("--window-size=1920,1080") # Tamaño de ventana para el renderizado
+chrome_options.add_argument("--start-maximized") # Inicia maximizado (aunque en headless es menos relevante)
+chrome_options.add_argument("--ignore-certificate-errors") # Ignora errores de certificado SSL
+chrome_options.add_argument("--disable-extensions") # Deshabilita extensiones
 
-# **LA LÍNEA CRÍTICA AÑADIDA/CORREGIDA:**
-# Indica a Selenium la ubicación del binario de Chrome en el entorno de Render.
-# Esta es la ruta estándar cuando Chrome se instala vía apt-get.
-chrome_options.binary_location = "/usr/bin/google-chrome"
-
+# **LA LÍNEA CRÍTICA CORREGIDA:**
+# Indica a Selenium la ubicación del binario de Chrome en la imagen 'browserless/chrome'.
+# La imagen 'browserless/chrome' usa 'google-chrome-stable'.
+chrome_options.binary_location = "/usr/bin/google-chrome-stable"
 
 # Configuraciones para descarga automática
 prefs = {
     "download.default_directory": DOWNLOAD_DIR,
     "download.prompt_for_download": False, # No preguntar dónde guardar
     "download.directory_upgrade": True,
-    "safeBrowse.enabled": True # Corrección: el nombre correcto de la preferencia es 'safeBrowse.enabled'
+    "safeBrowse.enabled": True # Nombre correcto para la preferencia de Safe Browse
 }
 chrome_options.add_experimental_option("prefs", prefs)
 
+# --- Inicialización del WebDriver ---
 try:
-    # webdriver_manager se encarga de descargar el chromedriver compatible.
-    service = Service(ChromeDriverManager().install())
-    print("Chromedriver instalado y configurado correctamente.")
+    # IMPORTANTE: Ya NO usamos ChromeDriverManager().install()
+    # La imagen 'browserless/chrome' ya incluye chromedriver y lo tiene en el PATH.
+    # Simplemente inicializamos un servicio sin especificar la ruta del ejecutable.
+    service = Service()
+    print("Chromedriver configurado para usar el driver provisto por la imagen Docker.")
 except Exception as e:
-    print(f"Error al instalar Chromedriver: {e}")
+    print(f"Error al configurar Chromedriver: {e}")
     # Es crucial que la aplicación falle si el driver no se puede configurar.
     raise
 
 # Inicializa el WebDriver de Chrome con las opciones y el servicio configurados.
+# Este driver se ejecutará en el entorno del contenedor Docker donde Chrome está disponible.
 driver = webdriver.Chrome(service=service, options=chrome_options)
 url = "http://senasofiaplus.edu.co/sofia-public/"
 
+# Resto de tu código para interactuar con el navegador
+# ... (tu código para descargar_juicio_evaluacion_por_ficha, etc.)
 # Credenciales de inicio de sesión
 usuario_login = "1050962935"
 contrasena_login = "PapaJose92805331050*"
