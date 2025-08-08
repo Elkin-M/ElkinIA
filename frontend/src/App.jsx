@@ -459,7 +459,10 @@ export default function App() {
       </div>
     </div>
   );
-}json();
+}
+
+json = await res.json();
+json();
         
         if (res.ok) {
           setProgress({ current: 100, total: 100, stage: "Mapeo completado" });
