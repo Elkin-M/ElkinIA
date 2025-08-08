@@ -154,20 +154,20 @@ def ejecutar_scraper_endpoint():
 
 
 # 📌 Endpoint: Solo mapear fichas (sin descargar)
-@app.post("/mapear-fichas")
-def mapear_fichas_endpoint(filtros: dict = None):  # Recibir filtros
+@app.get("/mapear-fichas")
+def mapear_fichas_endpoint():
     """
     Ejecuta solo el mapeo de fichas disponibles sin descargar juicios.
     """
     try:
-        logger.info(f"Iniciando mapeo de fichas con filtros: {filtros}")
+        logger.info("Iniciando mapeo de fichas...")
         scraper = ejecutar_scraper()
         
-        # Usar los filtros si los hay
+        # Crear una versión simplificada que solo mapee
         with scraper.driver_manager.safe_operation():
             scraper._realizar_login()
             scraper._navegar_a_reportes()
-            fichas_encontradas = scraper._buscar_y_mapear_fichas(filtros)  # Pasar filtros
+            fichas_encontradas = scraper._buscar_y_mapear_fichas()
             
         return {
             "status": "success",
@@ -181,6 +181,7 @@ def mapear_fichas_endpoint(filtros: dict = None):  # Recibir filtros
             status_code=500, 
             detail=f"Error en mapeo: {str(e)}"
         )
+
 
 # 📌 Endpoint: Descargar juicios específicos
 @app.post("/descargar-juicios")
