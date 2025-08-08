@@ -1,0 +1,9 @@
+### backend/requirements.txt
+fastapi
+uvicorn
+pydantic
+python-multipart
+selenium
+pandas
+openpyxl
+webdriver-manager
