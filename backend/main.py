@@ -30,12 +30,15 @@ app = FastAPI(
     description="Permite consultar, descargar y gestionar fichas del SENA y sus juicios evaluativos.",
     version="1.0.0"
 )
-
+origins = [
+    "https://elkin-1d1pfqpnc-elkin-ms-projects.vercel.app",  # tu frontend en Vercel
+    "http://localhost:3000",  # para desarrollo local
+]
 # Middleware CORS
 ALLOWED_ORIGINS = ["https://elkin-ia.vercel.app"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=origins,  # o usa ["*"] para permitir todos
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
