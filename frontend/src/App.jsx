@@ -38,98 +38,98 @@ export default function App() {
   };
 
   const handleSubmit = async (action, filters) => {
-  setLoading(true);
-  setProgress({ current: 0, total: 100, stage: "Iniciando..." });
-  
-  try {
-    let res;
-    let json; // Declarar json aquí para que esté disponible en todo el scope
+    setLoading(true);
+    setProgress({ current: 0, total: 100, stage: "Iniciando..." });
     
-    if (action === "mapear") {
-      setStatusMessage("🗺️ Iniciando mapeo de fichas...");
-      setProgress({ current: 10, total: 100, stage: "Conectando a SENA Sofia Plus..." });
+    try {
+      let res;
+      let json;
       
-      res = await fetch(`${API_URL}/mapear-fichas`, {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true"
-        },
-        body: JSON.stringify(filters)
-      });
-      
-      json = await res.json();
-      
-      if (res.ok) {
-        setProgress({ current: 100, total: 100, stage: "Mapeo completado" });
-        setStatusMessage(`✅ Mapeo terminado: ${json.fichas_encontradas || 0} fichas encontradas`);
-        console.log("Mapeo terminado:", json);
-      } else {
-        throw new Error(json.error || "Error en el mapeo");
+      if (action === "mapear") {
+        setStatusMessage("🗺️ Iniciando mapeo de fichas...");
+        setProgress({ current: 10, total: 100, stage: "Conectando a SENA Sofia Plus..." });
+        
+        res = await fetch(`${API_URL}/mapear-fichas`, {
+          method: 'POST',
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true"
+          },
+          body: JSON.stringify(filters)
+        });
+        
+        json = await res.json();
+        
+        if (res.ok) {
+          setProgress({ current: 100, total: 100, stage: "Mapeo completado" });
+          setStatusMessage(`✅ Mapeo terminado: ${json.fichas_encontradas || 0} fichas encontradas`);
+          console.log("Mapeo terminado:", json);
+        } else {
+          throw new Error(json.error || "Error en el mapeo");
+        }
+        
+      } else if (action === "descargar") {
+        setStatusMessage("⬇️ Iniciando descarga de juicios...");
+        setProgress({ current: 20, total: 100, stage: "Procesando descargas pendientes..." });
+        
+        res = await fetch(`${API_URL}/descargar-juicios`, {
+          method: 'POST',
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true"
+          },
+          body: JSON.stringify(filters)
+        });
+        
+        json = await res.json();
+        
+        if (res.ok) {
+          setProgress({ current: 100, total: 100, stage: "Descargas completadas" });
+          setStatusMessage(`✅ Descarga terminada: ${json.descargas_exitosas || 0} exitosas, ${json.descargas_fallidas || 0} fallidas`);
+          console.log("Descarga terminada:", json);
+        } else {
+          throw new Error(json.error || "Error en la descarga");
+        }
+        
+      } else if (action === "completo") {
+        setStatusMessage("🎯 Ejecutando proceso completo...");
+        setProgress({ current: 5, total: 100, stage: "Iniciando proceso completo..." });
+        
+        res = await fetch(`${API_URL}/proceso-completo`, {
+          method: 'POST',
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true"
+          },
+          body: JSON.stringify(filters)
+        });
+        
+        json = await res.json();
+        
+        if (res.ok) {
+          setProgress({ current: 100, total: 100, stage: "Proceso completo finalizado" });
+          setStatusMessage(`🎉 Proceso completo terminado: ${json.fichas_mapeadas || 0} fichas mapeadas, ${json.descargas_exitosas || 0} descargas exitosas`);
+          console.log("Proceso completo terminado:", json);
+        } else {
+          throw new Error(json.error || "Error en el proceso completo");
+        }
       }
       
-    } else if (action === "descargar") {
-      setStatusMessage("⬇️ Iniciando descarga de juicios...");
-      setProgress({ current: 20, total: 100, stage: "Procesando descargas pendientes..." });
+      // Refresca la vista de fichas después de cualquier acción
+      await fetchFichas();
       
-      res = await fetch(`${API_URL}/descargar-juicios`, {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true"
-        },
-        body: JSON.stringify(filters)
-      });
-      
-      json = await res.json();
-      
-      if (res.ok) {
-        setProgress({ current: 100, total: 100, stage: "Descargas completadas" });
-        setStatusMessage(`✅ Descarga terminada: ${json.descargas_exitosas || 0} exitosas, ${json.descargas_fallidas || 0} fallidas`);
-        console.log("Descarga terminada:", json);
-      } else {
-        throw new Error(json.error || "Error en la descarga");
-      }
-      
-    } else if (action === "completo") {
-      setStatusMessage("🎯 Ejecutando proceso completo...");
-      setProgress({ current: 5, total: 100, stage: "Iniciando proceso completo..." });
-      
-      res = await fetch(`${API_URL}/proceso-completo`, {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true"
-        },
-        body: JSON.stringify(filters)
-      });
-      
-      json = await res.json();
-      
-      if (res.ok) {
-        setProgress({ current: 100, total: 100, stage: "Proceso completo finalizado" });
-        setStatusMessage(`🎉 Proceso completo terminado: ${json.fichas_mapeadas || 0} fichas mapeadas, ${json.descargas_exitosas || 0} descargas exitosas`);
-        console.log("Proceso completo terminado:", json);
-      } else {
-        throw new Error(json.error || "Error en el proceso completo");
-      }
-    }
-    
-    // Refresca la vista de fichas
-    await fetchFichas();
-    
-  } catch (err) {
-    console.error("Error al ejecutar acción:", err);
-    setStatusMessage(`❌ Error: ${err.message}`);
-    setProgress(null);
-  } finally {
-    setLoading(false);
-    // Limpiar progreso después de 5 segundos
-    setTimeout(() => {
+    } catch (err) {
+      console.error("Error al ejecutar acción:", err);
+      setStatusMessage(`❌ Error: ${err.message}`);
       setProgress(null);
-    }, 5000);
-  }
-};
+    } finally {
+      setLoading(false);
+      // Limpiar progreso después de 5 segundos
+      setTimeout(() => {
+        setProgress(null);
+      }, 5000);
+    }
+  };
 
   const handleDownloadSingle = async (numeroFicha) => {
     setLoading(true);
@@ -460,29 +460,3 @@ export default function App() {
     </div>
   );
 }
-
-json = await res.json();
-json();
-        
-        if (res.ok) {
-          setProgress({ current: 100, total: 100, stage: "Mapeo completado" });
-          setStatusMessage(`✅ Mapeo terminado: ${json.fichas_encontradas || 0} fichas encontradas`);
-          console.log("Mapeo terminado:", json);
-        } else {
-          throw new Error(json.error || "Error en el mapeo");
-        }
-        
-        if (action === "descargar") {
-        setStatusMessage("⬇️ Iniciando descarga de juicios...");
-        setProgress({ current: 20, total: 100, stage: "Procesando descargas pendientes..." });
-        
-        res = await fetch(`${API_URL}/descargar-juicios`, {
-          method: 'POST',
-          headers: {
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "true"
-          },
-          body: JSON.stringify(filters)
-        });
-      }
-        const json = await res.json();
