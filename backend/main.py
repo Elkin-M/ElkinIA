@@ -138,7 +138,7 @@ def descargar_archivo(filename: str):
     )
 
 # 📌 Endpoint: Ejecutar scraper completo
-@app.post("/proceso-completo")  # ✅ Cambié a POST para consistencia
+@app.get("/proceso-completo")  # ✅ Cambié a POST para consistencia
 def ejecutar_scraper_endpoint(filtros: FiltrosMapeo = None):
     """
     Ejecuta el scraper completo para mapear y descargar fichas.

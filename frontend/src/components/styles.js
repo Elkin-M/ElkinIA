@@ -13,6 +13,7 @@ export const styles = {
     gap: '32px',
   },
   card: {
+    padding: '12px',
     backgroundColor: 'white',
     borderRadius: '16px',
     boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
