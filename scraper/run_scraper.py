@@ -15,10 +15,16 @@ from datetime import datetime, timedelta
 import sqlite3
 import os, re, time, shutil
 
+# --- Configuración para el control de versiones ---
+from hashlib import sha256
+from datetime import datetime
+from pathlib import Path
 
 # --- OPCIÓN 1: Variable global con inicialización perezosa ---
 GAS_URL = "https://script.google.com/macros/s/AKfycby17IUaE5GI71cIUjewXA9_2nuHJgQiAVgy7d2_oi53nH9efjzBqWilSTzEAKPbkR0z/exec"
 driver = None  # Solo declara la variable, no inicializa el driver
+VERSIONS_FILE = Path(__file__).resolve().parent / "datos" / "versiones_juicios.json"
+
 
 def get_driver():
     """
@@ -372,6 +378,49 @@ def insert_ficha(numero_ficha, denominacion_programa, departamento, municipio, j
     except sqlite3.Error as e:
         print(f"Error al insertar ficha '{numero_ficha}': {e}")
         return False
+
+#-- funciones para control de verciones
+
+def calcular_hash_binario(data: bytes) -> str:
+    return sha256(data).hexdigest()
+
+def cargar_versiones():
+    if not VERSIONS_FILE.exists():
+        return {}
+    with open(VERSIONS_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def guardar_versiones(data):
+    VERSIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(VERSIONS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+def juicio_ha_cambiado(ficha_id: str, archivo_path: Path) -> bool:
+    versiones = cargar_versiones()
+    if not archivo_path.exists():
+        return False
+    with open(archivo_path, "rb") as f:
+        contenido = f.read()
+    nuevo_hash = calcular_hash_binario(contenido)
+    hash_anterior = versiones.get(ficha_id, {}).get("hash")
+    return nuevo_hash != hash_anterior
+
+def actualizar_si_cambia(ficha_id: str, archivo_path: Path) -> bool:
+    versiones = cargar_versiones()
+    if not archivo_path.exists():
+        return False
+    with open(archivo_path, "rb") as f:
+        contenido = f.read()
+    nuevo_hash = calcular_hash_binario(contenido)
+    if juicio_ha_cambiado(ficha_id, archivo_path):
+        versiones[ficha_id] = {
+            "hash": nuevo_hash,
+            "ultima_actualizacion": datetime.now().isoformat()
+        }
+        guardar_versiones(versiones)
+        return True
+    return False
+#-----------------------------------------------------------------------
 
 def insert_juicio_evaluacion(numero_ficha, materia, estado_aprobacion):
     """Inserta un juicio de evaluación en la tabla 'juicios_evaluacion'."""
@@ -948,6 +997,17 @@ def descargar_juicio_evaluacion_por_ficha(ficha_data: dict, max_reintentos: int 
                 destino = f"{base}_{idx}{ext0}"
             shutil.move(nuevo_arch, destino)
             print(f"✅ ({intento}) Archivo renombrado a: {os.path.basename(destino)}")
+
+            #---- fragmento para manejo de versiones ----
+             # ⚠️ Verificación de cambio real de contenido
+            from pathlib import Path
+            archivo_path = Path(destino)
+            if actualizar_si_cambia(num_ficha, archivo_path):
+                print(f"✅ Contenido nuevo o modificado, archivo conservado.")
+            else:
+                print(f"⚠️ Archivo sin cambios. Eliminado.")
+                archivo_path.unlink()
+
 
             # Actualizar estado en Google Sheets
             url_estado = f"{url_base_estado}?action=update&ficha={num_ficha}&estado=descargado"
