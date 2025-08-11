@@ -14,6 +14,8 @@ import pandas as pd
 from datetime import datetime, timedelta
 import sqlite3
 import os, re, time, shutil
+from pathlib import Path
+from uploader_drive import subir_archivo_a_drive
 
 # --- Configuración para el control de versiones ---
 from hashlib import sha256
@@ -420,6 +422,13 @@ def actualizar_si_cambia(ficha_id: str, archivo_path: Path) -> bool:
         guardar_versiones(versiones)
         return True
     return False
+#-----------------------------------------------------------------------
+
+#---------- funcion para subir archivos a drive ------------------------
+
+def subir_todos_los_archivos_a_drive():
+    for archivo in VERSIONS_FILE.glob("*.xls"):
+        subir_archivo_a_drive(archivo)
 #-----------------------------------------------------------------------
 
 def insert_juicio_evaluacion(numero_ficha, materia, estado_aprobacion):
@@ -1367,9 +1376,9 @@ def ejecutar_scraper():
 
         dep_busqueda = "BOLÍVAR"
         mun_busqueda = "CARTAGENA"
-        jornada_busqueda = "DIURNA"
+        jornada_busqueda = "NOCTURNA"
         codigo_ficha_busqueda = None
-        fecha_final_busqueda = None
+        fecha_final_busqueda = "09/07/2025"
 
         filtros_actuales = {
             'codigo_ficha': codigo_ficha_busqueda,
@@ -1455,6 +1464,10 @@ def descargar_juicios_evaluacion():
         except Exception as screenshot_e:
             print(f"No se pudo guardar la captura de pantalla: {screenshot_e}")
     finally:
+        print("\n🔁 Subiendo archivos descargados a Google Drive...")
+        subir_todos_los_archivos_a_drive()
+        print("✅ Archivos subidos a Google Drive.")
+
         print("\nProceso de automatización completado. Cerrando navegador...")
         driver.quit()
         close_db()  # Cerrar la conexión a la base de datos al finalizar
