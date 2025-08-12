@@ -5,79 +5,118 @@ from googleapiclient.http import MediaFileUpload
 from google.auth.transport.requests import Request
 from pathlib import Path
 import os
+import traceback
 
 # 📌 SCOPES necesarios para crear y subir archivos a Drive
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
-# 📁 Ruta al archivo de credenciales descargado desde Google Cloud
-CREDENTIALS_FILE = 'credentials.json'
-TOKEN_FILE = 'token.json'  # Se crea después del primer login autorizado
+# 📁 Rutas base
+BASE_DIR = Path(__file__).resolve().parent
+CREDENTIALS_FILE = BASE_DIR / "credentials.json"
+TOKEN_FILE = BASE_DIR / "token.json"
 
-# 📌 Coloca aquí el ID de la carpeta destino en tu Google Drive
-FOLDER_ID = '1u3ScbWFYet0tNTG-6vE1d4c24vLKB04Y'  # <-- Reemplaza esto con el ID real de la carpeta
+# 📌 ID de la carpeta destino en tu Google Drive
+FOLDER_ID = '1u3ScbWFYet0tNTG-6vE1d4c24vLKB04Y'  # <-- Reemplaza con la carpeta real
 
 def obtener_servicio_drive():
+    print("🔐 Obteniendo servicio de Google Drive...")
     creds = None
 
-    # Cargar token si ya existe
-    if os.path.exists(TOKEN_FILE):
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+    try:
+        if TOKEN_FILE.exists():
+            print(f"📄 Cargando token desde {TOKEN_FILE}")
+            creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
 
-    # Si no hay token válido, solicitar autorización
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open(TOKEN_FILE, 'w') as token:
-            token.write(creds.to_json())
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                print("🔁 Refrescando token...")
+                creds.refresh(Request())
+            else:
+                if not CREDENTIALS_FILE.exists():
+                    print(f"❌ Archivo de credenciales no encontrado: {CREDENTIALS_FILE}")
+                    return None
+                print("🌐 Iniciando flujo de autenticación...")
+                flow = InstalledAppFlow.from_client_secrets_file(str(CREDENTIALS_FILE), SCOPES)
+                creds = flow.run_local_server(port=0)
+            # Guardar nuevo token
+            with open(TOKEN_FILE, 'w') as token:
+                token.write(creds.to_json())
+                print(f"✅ Token guardado en {TOKEN_FILE}")
+    except Exception as e:
+        print(f"❌ Error autenticando con Google Drive: {e}")
+        traceback.print_exc()
+        return None
 
+    print("✅ Servicio de Drive inicializado correctamente.\n")
     return build('drive', 'v3', credentials=creds)
 
 
-def subir_archivo_a_drive(ruta_archivo: Path, nombre_drive: str = None, mime_type: str = None):
-    """Sube un archivo individual a una carpeta de Google Drive"""
+def subir_archivo_a_drive(servicio, ruta_archivo: Path):
     if not ruta_archivo.exists():
         print(f"❌ Archivo no encontrado: {ruta_archivo}")
-        return None
+        return False
 
-    if nombre_drive is None:
-        nombre_drive = ruta_archivo.name
-    if mime_type is None:
-        mime_type = "application/vnd.ms-excel"  # para .xls
+    try:
+        archivo_metadata = {
+            "name": ruta_archivo.name,
+            "parents": [FOLDER_ID],  # ✅ Aquí se asigna la carpeta destino
+        }
 
-    servicio = obtener_servicio_drive()
+        media = MediaFileUpload(str(ruta_archivo), resumable=True)
+        archivo = servicio.files().create(
+            body=archivo_metadata,
+            media_body=media,
+            fields="id"
+        ).execute()
 
-    archivo_metadata = {
-        'name': nombre_drive,
-        'parents': [FOLDER_ID]  # 🔁 Aquí se define la carpeta destino
-    }
+        archivo_id = archivo.get('id')
+        print(f"✅ Archivo subido con ID: {archivo_id}\n")
+        return True
 
-    media = MediaFileUpload(str(ruta_archivo), mimetype=mime_type)
-
-    archivo = servicio.files().create(
-        body=archivo_metadata,
-        media_body=media,
-        fields='id'
-    ).execute()
-
-    print(f"✅ Archivo '{nombre_drive}' subido con ID: {archivo.get('id')}")
-    return archivo.get('id')
+    except Exception as e:
+        print(f"❌ Error subiendo {ruta_archivo.name}: {e}")
+        traceback.print_exc()
+        return False
 
 
-def subir_todos_los_archivos_a_drive(directorio_local: str = "reportes_juicios"):
-    """Sube todos los archivos .xls de una carpeta local a Google Drive"""
-    directorio = Path(directorio_local)
-    if not directorio.exists():
-        print(f"❌ El directorio no existe: {directorio}")
+def subir_todos_los_archivos_a_drive(directorio_local: str = "../reportes_juicios"):
+    print(f"\n📂 Buscando archivos en: {directorio_local}")
+    directorio = (BASE_DIR / directorio_local).resolve()
+
+    if not directorio.exists() or not directorio.is_dir():
+        print(f"❌ El directorio no existe o no es válido: {directorio}")
         return
 
     archivos_xls = list(directorio.glob("*.xls"))
-    if not archivos_xls:
+    total = len(archivos_xls)
+
+    if total == 0:
         print(f"⚠️ No se encontraron archivos .xls en: {directorio}")
         return
 
-    for archivo in archivos_xls:
-        subir_archivo_a_drive(archivo)
+    print(f"📋 Total de archivos .xls encontrados: {total}\n")
 
+    servicio = obtener_servicio_drive()
+    if not servicio:
+        print("❌ No se pudo inicializar el servicio de Drive.")
+        return
+
+    subidos = 0
+    errores = 0
+
+    for archivo in archivos_xls:
+        print(f"🚀 Subiendo archivo: {archivo.name}")
+        resultado = subir_archivo_a_drive(servicio, archivo)
+        if resultado:
+            subidos += 1
+        else:
+            errores += 1
+
+    print("\n📊 Resumen del proceso:")
+    print(f"✅ Archivos subidos: {subidos}")
+    print(f"❌ Fallos al subir: {errores}")
+    print("🟢 Proceso completado.\n")
+
+
+if __name__ == "__main__":
+    subir_todos_los_archivos_a_drive()
