@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 import sqlite3
 import os, re, time, shutil
 from pathlib import Path
-from uploader_drive import subir_archivo_a_drive
+from backend.uploader_drive import subir_todos_los_archivos_a_drive
 
 # --- Configuración para el control de versiones ---
 from hashlib import sha256
@@ -26,6 +26,157 @@ from pathlib import Path
 GAS_URL = "https://script.google.com/macros/s/AKfycby17IUaE5GI71cIUjewXA9_2nuHJgQiAVgy7d2_oi53nH9efjzBqWilSTzEAKPbkR0z/exec"
 driver = None  # Solo declara la variable, no inicializa el driver
 VERSIONS_FILE = Path(__file__).resolve().parent / "datos" / "versiones_juicios.json"
+
+# ====================================================================
+# OPTIMIZACIÓN DE CLICS - BASADO EN ANÁLISIS DE LOGS
+# ====================================================================
+# Elementos que SIEMPRE fallan con clic normal y requieren JavaScript directo
+
+JAVASCRIPT_ONLY_ELEMENTS = {
+    'frmForma1:cmdlnkShow145',  # Modal de búsqueda de fichas
+    '//*[@id="form:dtFichas:0:cmdlnkShow"]'  # Selección de ficha específica
+}
+
+# Elementos que SIEMPRE funcionan con clic normal
+NORMAL_CLICK_ONLY_ELEMENTS = {
+    'form:buscarCBT',  # Botones de búsqueda en modal
+    '//*[@id="frmForma1:btnConsultar"]',  # Botón consultar final
+    # Navegación de submenús (siempre funcionan)
+    '/html/body[1]/div[1]/div[1]/nav/div[2]/div/div/form[2]/ul/li[6]/ul/li[1]/a',
+    '/html/body[1]/div[1]/div[1]/nav/div[2]/div/div/form[2]/ul/li[6]/ul/li[1]/ul/li[3]/a',
+    '/html/body[1]/div[1]/div[1]/nav/div[2]/div/div/form[2]/ul/li[6]/ul/li[1]/ul/li[3]/ul/li[4]/a'
+}
+
+# Elementos que tienen overlay inicial (necesitan espera + clic normal)
+OVERLAY_ELEMENTS = {
+    '/html/body[1]/div[1]/div[1]/nav/div[2]/div/div/form[2]/ul/li[6]/a'  # Menú principal
+}
+
+def wait_for_overlay_to_disappear(driver, timeout=10):
+    """
+    Espera específicamente a que desaparezcan los overlays que interceptan clics
+    """
+    overlays_to_wait = [
+        ".blockUI.blockOverlay",
+        ".dialogUnderlay",
+        "[style*='z-index: 2000']",
+        "[style*='z-index: 998']",
+        "div.blockUI.blockOverlay",
+        "div.dialogUnderlay[style*='display: block']"
+    ]
+    
+    for overlay in overlays_to_wait:
+        try:
+            WebDriverWait(driver, timeout).until_not(
+                EC.presence_of_element_located((By.CSS_SELECTOR, overlay))
+            )
+        except TimeoutException:
+            continue  # Si no encuentra el overlay, continúa
+    
+    # También esperar que no haya elementos con opacity específica que bloqueen
+    try:
+        WebDriverWait(driver, 5).until_not(
+            EC.presence_of_element_located((By.XPATH, "//div[contains(@style,'opacity: 0.4')]"))
+        )
+    except TimeoutException:
+        pass
+
+def click_with_javascript(driver, locator, by_method=By.ID, timeout=10):
+    """
+    Ejecuta clic usando JavaScript directamente
+    """
+    try:
+        element = WebDriverWait(driver, timeout).until(
+            EC.presence_of_element_located((by_method, locator))
+        )
+        driver.execute_script("arguments[0].click();", element)
+        print(f"✅ Clic exitoso con JavaScript en: '{locator}'")
+        return True
+    except Exception as e:
+        print(f"❌ Error en clic JavaScript para '{locator}': {e}")
+        return False
+
+def click_normal_optimized(driver, locator, by_method=By.ID, timeout=10):
+    """
+    Ejecuta clic normal optimizado
+    """
+    try:
+        element = WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((by_method, locator))
+        )
+        element.click()
+        method_name = "ID" if by_method == By.ID else "XPATH" if by_method == By.XPATH else str(by_method)
+        print(f"✅ Clic normal exitoso en '{locator}' usando {method_name}")
+        return True
+    except Exception as e:
+        print(f"❌ Error en clic normal para '{locator}': {e}")
+        return False
+
+def llamar_click_optimizado(locator, timeout=20, by_method=By.XPATH):
+    """
+    FUNCIÓN OPTIMIZADA que reemplaza a llamar_click_solo()
+    Usa estrategias específicas basadas en el análisis de logs
+    """
+    elemento_selector = locator
+    
+    print(f"🎯 Ejecutando clic optimizado en: {elemento_selector}")
+    
+    # ESTRATEGIA 1: JavaScript directo para elementos problemáticos
+    if elemento_selector in JAVASCRIPT_ONLY_ELEMENTS:
+        print("📱 Usando JavaScript directo (patrón identificado)")
+        if click_with_javascript(driver, locator, by_method, timeout):
+            return
+        else:
+            raise Exception(f"Falló JavaScript para elemento crítico: {locator}")
+    
+    # ESTRATEGIA 2: Clic normal directo para elementos confiables  
+    elif elemento_selector in NORMAL_CLICK_ONLY_ELEMENTS:
+        print("🔧 Usando clic normal directo (patrón confiable)")
+        if click_normal_optimized(driver, locator, by_method, timeout):
+            return
+        else:
+            # Fallback a JavaScript si falla inesperadamente
+            print("⚠️ Clic normal falló inesperadamente, probando JavaScript...")
+            if click_with_javascript(driver, locator, by_method, timeout):
+                return
+            else:
+                raise Exception(f"Falló ambos métodos para elemento confiable: {locator}")
+    
+    # ESTRATEGIA 3: Esperar overlay + clic normal
+    elif elemento_selector in OVERLAY_ELEMENTS:
+        print("⏳ Esperando que desaparezca overlay + clic normal")
+        wait_for_overlay_to_disappear(driver, timeout=15)
+        time.sleep(1)  # Pausa adicional tras desaparecer overlay
+        
+        if click_normal_optimized(driver, locator, by_method, timeout):
+            return
+        else:
+            # Fallback a JavaScript
+            print("⚠️ Clic normal falló tras esperar overlay, probando JavaScript...")
+            if click_with_javascript(driver, locator, by_method, timeout):
+                return
+            else:
+                raise Exception(f"Falló ambos métodos para elemento con overlay: {locator}")
+    
+    # ESTRATEGIA 4: Comportamiento adaptativo (1 intento normal + JavaScript)
+    else:
+        print("🔄 Usando estrategia adaptativa (1 normal + JavaScript)")
+        
+        # Esperar overlays preventivamente
+        wait_for_overlay_to_disappear(driver, timeout=5)
+        
+        # 1 intento normal
+        if click_normal_optimized(driver, locator, by_method, timeout):
+            return
+        
+        # Fallback inmediato a JavaScript
+        print("🔀 Cambiando a JavaScript tras fallo normal...")
+        if click_with_javascript(driver, locator, by_method, timeout):
+            return
+        
+        # Si ambos fallan, lanzar excepción
+        raise Exception(f"Ambos métodos fallaron para: {locator}")
+
 
 
 def get_driver():
@@ -426,9 +577,6 @@ def actualizar_si_cambia(ficha_id: str, archivo_path: Path) -> bool:
 
 #---------- funcion para subir archivos a drive ------------------------
 
-def subir_todos_los_archivos_a_drive():
-    for archivo in VERSIONS_FILE.glob("*.xls"):
-        subir_archivo_a_drive(archivo)
 #-----------------------------------------------------------------------
 
 def insert_juicio_evaluacion(numero_ficha, materia, estado_aprobacion):
@@ -454,13 +602,8 @@ def close_db():
 
 
 def esperar_cualquier_overlay_desaparecer(timeout=10):
-    try:
-        WebDriverWait(driver, timeout).until_not(
-            EC.presence_of_element_located((By.CLASS_NAME, "ui-blockui"))
-        )
-    except TimeoutException:
-        print("⏳ Overlay no desapareció a tiempo o no estaba presente. Continuando…")
-
+    """Función mejorada que usa la nueva lógica de overlays"""
+    wait_for_overlay_to_disappear(driver, timeout)
 
 def llamar_click_solo(locator, timeout=20, by_method=By.XPATH):
     """
@@ -660,7 +803,7 @@ def aplicar_filtros_modal(codigo_ficha=None, departamento=None, municipio=None, 
             time.sleep(1)
 
         print("Haciendo clic en el botón 'Buscar' del modal...")
-        llamar_click_solo(XPATH_BOTON_CONSULTAR_MODAL, timeout=20, by_method=By.ID)
+        llamar_click_optimizado(XPATH_BOTON_CONSULTAR_MODAL, timeout=20, by_method=By.ID)
 
         print("Esperando a que aparezcan los resultados en la tabla...")
         WebDriverWait(driver, 20).until(
@@ -918,20 +1061,18 @@ XPATH_BOTON_DESCARGAR_JUICIO = 'tu_xpath_del_boton_de_descarga_del_juicio_evalua
 
 import requests  # asegúrate de tener esta importación al inicio
 
-def descargar_juicio_evaluacion_por_ficha(ficha_data: dict, max_reintentos: int = 3) -> bool:
+def descargar_juicio_evaluacion_por_ficha_optimizado(ficha_data: dict, max_reintentos: int = 3) -> bool:
+    """
+    VERSIÓN OPTIMIZADA de descargar_juicio_evaluacion_por_ficha
+    Reemplaza a la función original
+    """
     num_ficha = str(ficha_data["NumeroFicha"]).strip()
     slug_prog = slugify(ficha_data.get("NombrePrograma", "programa"))
     url_base_estado = "https://script.google.com/macros/s/AKfycbxA5vH9uibvvjOjY1rBumhJ5ecGIAD5iuzeShlaaDrUvfwo2NeudiRjfFLoRCaVTLjY/exec"
 
     def _esperar_dialog_underlay(timeout=10):
-        try:
-            WebDriverWait(driver, timeout).until_not(
-                EC.presence_of_element_located((
-                    By.XPATH, "//div[contains(@class,'dialogUnderlay') and contains(@style,'display: block')]"
-                ))
-            )
-        except TimeoutException:
-            pass
+        """Usar la nueva función optimizada"""
+        wait_for_overlay_to_disappear(driver, timeout)
 
     for intento in range(1, max_reintentos + 1):
         print(f"\n==> [{intento}/{max_reintentos}] Descargando juicio para ficha {num_ficha}")
@@ -943,9 +1084,9 @@ def descargar_juicio_evaluacion_por_ficha(ficha_data: dict, max_reintentos: int 
                 EC.frame_to_be_available_and_switch_to_it(IFRAME_CONTENIDO_ID)
             )
 
-            # 2️⃣ Abrir el modal
+            # 2️⃣ Abrir el modal (OPTIMIZADO)
             _esperar_dialog_underlay()
-            llamar_click_solo(XPATH_BOTON_ABRIR_BUSCADOR_FICHAS, by_method=By.ID)
+            llamar_click_optimizado(XPATH_BOTON_ABRIR_BUSCADOR_FICHAS, timeout=30, by_method=By.ID)
             _esperar_dialog_underlay()
 
             # 3️⃣ Cambiar a iframe modal
@@ -954,21 +1095,25 @@ def descargar_juicio_evaluacion_por_ficha(ficha_data: dict, max_reintentos: int 
             )
             _esperar_dialog_underlay()
 
-            # 4️⃣ Buscar ficha
+            # 4️⃣ Buscar ficha (OPTIMIZADO)
             ingresar_texto_y_enviar("form:codigoFichaITX", num_ficha, by_method=By.ID)
-            llamar_click_solo("form:buscarCBT", by_method=By.ID)
+            if not click_with_javascript(driver, "form:buscarCBT", by_method=By.ID, timeout=20):
+                print("❌ Fallback JavaScript también falló para 'form:buscarCBT'")
             _esperar_dialog_underlay()
 
-            # 5️⃣ Ver ficha
+            # 5️⃣ Ver ficha (OPTIMIZADO)
             xpath_boton_ver = '//*[@id="form:dtFichas:0:cmdlnkShow"]'
             WebDriverWait(driver, 15).until(
                 EC.element_to_be_clickable((By.XPATH, xpath_boton_ver))
             )
-            llamar_click_solo(xpath_boton_ver, by_method=By.XPATH)
+            llamar_click_optimizado(xpath_boton_ver, timeout=20, by_method=By.XPATH)
 
             # Salir del iframe modal
             driver.switch_to.default_content()
             _esperar_dialog_underlay()
+            WebDriverWait(driver, 15).until(
+                EC.element_to_be_clickable((By.XPATH,  '//*[@id="frmForma1:btnConsultar"]'))
+            )
 
             # 6️⃣ Volver a iframe de contenido para consultar
             WebDriverWait(driver, 10).until(
@@ -976,9 +1121,9 @@ def descargar_juicio_evaluacion_por_ficha(ficha_data: dict, max_reintentos: int 
             )
             _esperar_dialog_underlay()
 
-            # 7️⃣ Consultar y descargar
+            # 7️⃣ Consultar y descargar (OPTIMIZADO)
             prev_files = set(os.listdir(DOWNLOAD_DIR))
-            llamar_click_solo('//*[@id="frmForma1:btnConsultar"]')
+            llamar_click_optimizado('//*[@id="frmForma1:btnConsultar"]', timeout=20, by_method=By.XPATH)
             _esperar_dialog_underlay()
 
             nuevo_arch = esperar_nuevo_archivo(DOWNLOAD_DIR, prev_files, timeout=120)
@@ -1007,8 +1152,7 @@ def descargar_juicio_evaluacion_por_ficha(ficha_data: dict, max_reintentos: int 
             shutil.move(nuevo_arch, destino)
             print(f"✅ ({intento}) Archivo renombrado a: {os.path.basename(destino)}")
 
-            #---- fragmento para manejo de versiones ----
-             # ⚠️ Verificación de cambio real de contenido
+            # Verificación de cambio real de contenido
             from pathlib import Path
             archivo_path = Path(destino)
             if actualizar_si_cambia(num_ficha, archivo_path):
@@ -1016,7 +1160,6 @@ def descargar_juicio_evaluacion_por_ficha(ficha_data: dict, max_reintentos: int 
             else:
                 print(f"⚠️ Archivo sin cambios. Eliminado.")
                 archivo_path.unlink()
-
 
             # Actualizar estado en Google Sheets
             url_estado = f"{url_base_estado}?action=update&ficha={num_ficha}&estado=descargado"
@@ -1049,6 +1192,7 @@ def descargar_juicio_evaluacion_por_ficha(ficha_data: dict, max_reintentos: int 
                 return False
             time.sleep(2)
 
+    return False
 
 
 
@@ -1313,19 +1457,20 @@ def ejecutar_scraper():
         # 2. Navegación por el menú
         print("\n🧭 Navegando por el menú...")
         print("📂 Navegando a 'Ejecución a la formación'...")
-        llamar_click_solo(XPATH_MENU_EJECUCION_FORMACION_GDC)
+        click_with_javascript(driver, XPATH_MENU_EJECUCION_FORMACION_GDC, by_method=By.XPATH)
         time.sleep(1)
 
+
         print("📂 Navegando a 'Administrar Ruta de Aprendizaje'...")
-        llamar_click_solo(XPATH_MENU_ADMINISTRAR_RUTA_APRENDIZAJE_GDC)
+        llamar_click_optimizado(XPATH_MENU_ADMINISTRAR_RUTA_APRENDIZAJE_GDC)
         time.sleep(1)
 
         print("📊 Navegando a 'Reportes'...")
-        llamar_click_solo(XPATH_MENU_REPORTES_GDC)
+        llamar_click_optimizado(XPATH_MENU_REPORTES_GDC)
         time.sleep(1)
 
         print("⚖️ Navegando a 'Reportes de Juicios de Evaluación'...")
-        llamar_click_solo(XPATH_MENU_REPORTES_JUICIOS_EVALUACION_GDC)
+        llamar_click_optimizado(XPATH_MENU_REPORTES_JUICIOS_EVALUACION_GDC)
         time.sleep(3)
 
         # 3. Cambiar a iframe 'contenido'
@@ -1342,8 +1487,16 @@ def ejecutar_scraper():
 
         esperar_cualquier_overlay_desaparecer(timeout=20)
 
-        print("🔍 Haciendo clic en el botón para abrir el buscador de fichas...")
-        llamar_click_solo(XPATH_BOTON_ABRIR_BUSCADOR_FICHAS, timeout=30, by_method=By.ID)
+        print("🔍 Haciendo clic en el botón para abrir el buscador de fichas sea clickeable...")
+        try:
+            WebDriverWait(driver, 15).until(
+                EC.element_to_be_clickable((By.ID, XPATH_BOTON_ABRIR_BUSCADOR_FICHAS))   
+            )
+        except Exception as wait_e:
+            print(f"⚠️ Advertencia: el botón no estuvo clickeable a tiempo: {wait_e}")
+
+        print("🖱️ Haciendo clic en el botón para abrir el buscador de fichas...")
+        llamar_click_optimizado(XPATH_BOTON_ABRIR_BUSCADOR_FICHAS, timeout=30, by_method=By.ID)
 
         # 4. Cambiar al iframe anidado del modal
         print("\n🖼️ Buscando iframe anidado del modal...")
@@ -1372,7 +1525,7 @@ def ejecutar_scraper():
         # 5. Aplicar filtros
         print("\n🔧 Aplicando filtros de búsqueda...")
         current_date = datetime.now()
-        fecha_inicio_busqueda = "03/07/2025"
+        fecha_inicio_busqueda = None
 
         dep_busqueda = "BOLÍVAR"
         mun_busqueda = "CARTAGENA"
@@ -1448,7 +1601,7 @@ def descargar_juicios_evaluacion():
             registrar_ficha_en_hoja(ficha_dict)  # 👉 Añadir a Google Sheets
             print(f"\nProcesando ficha para descarga: {ficha_dict['NumeroFicha']}")
 
-            success = descargar_juicio_evaluacion_por_ficha(ficha_dict)
+            success = descargar_juicio_evaluacion_por_ficha_optimizado(ficha_dict)
             if success:
                 print(f"✅ Descarga de juicio completada para ficha {ficha_dict['NumeroFicha']}.")
                 actualizar_estado_ficha(ficha_dict["NumeroFicha"])  # 👉 Cambia estado a 'descargado'
