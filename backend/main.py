@@ -42,13 +42,16 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://elkin-eym8red0s-elkin-ms-projects.vercel.app",  # Vercel actual
-        "https://elkin-lemmgayal-elkin-ms-projects.vercel.app",   # Vercel anterior
-        "https://gerardoia.onrender.com",                         # ✅ Render (frontend actual)
-        "http://localhost:3000",                                  # Desarrollo local
-        "http://localhost:5173",                                  # Vite
-        "http://localhost:8080"                                   # Otros puertos
-        # "*"  ⚠️ No lo pongas junto a otros orígenes, solo úsalo solo en desarrollo
+        # "https://elkin-eym8red0s-elkin-ms-projects.vercel.app",  # Vercel actual
+        # "https://elkin-lemmgayal-elkin-ms-projects.vercel.app",   # Vercel anterior
+        # "https://gerardoia.onrender.com",                         # ✅ Render (frontend actual)
+        # "http://localhost:3000",                                  # Desarrollo local
+        # "http://localhost:5173",                                  # Vite
+        # "http://localhost:8080"                                   # Otros puertos
+        # "http://127.0.0.1:50268",     # donde se ejecuta tu HTML
+        # "http://localhost:5500",      # LiveServer si usas VSCode
+        # "https://aa6a52a8c27f.ngrok-free.app"
+         "*"  
     ],
     allow_credentials=True,
     allow_methods=["*"],

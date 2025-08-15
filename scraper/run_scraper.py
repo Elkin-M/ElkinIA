@@ -8,6 +8,7 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException, ElementClickInterceptedException, StaleElementReferenceException, NoSuchFrameException
 import time
+import traceback
 import json
 import requests
 import pandas as pd
@@ -1057,9 +1058,11 @@ def manejar_paginacion_modal(current_filters: dict) -> pd.DataFrame:
 # después de seleccionar una ficha y llegar a la vista de "Contenido" (donde está la tabla de juicios).
 # Debería ser el XPath del botón que activa la descarga del Excel.
 # EJEMPLO: '//*[@id="frmConsulta:j_id_jsp_XXXXXXXXX_btnDescargar"]' o un XPath más genérico.
-XPATH_BOTON_DESCARGAR_JUICIO = 'tu_xpath_del_boton_de_descarga_del_juicio_evaluativo' # ¡DEBES REEMPLAZAR ESTO!
+XPATH_BOTON_DESCARGAR_JUICIO = '/html/body[1]/div[2]/form/fieldset/div/div/input' # ¡DEBES REEMPLAZAR ESTO!
 
 import requests  # asegúrate de tener esta importación al inicio
+
+import traceback
 
 def descargar_juicio_evaluacion_por_ficha_optimizado(ficha_data: dict, max_reintentos: int = 3) -> bool:
     """
@@ -1071,64 +1074,79 @@ def descargar_juicio_evaluacion_por_ficha_optimizado(ficha_data: dict, max_reint
     url_base_estado = "https://script.google.com/macros/s/AKfycbxA5vH9uibvvjOjY1rBumhJ5ecGIAD5iuzeShlaaDrUvfwo2NeudiRjfFLoRCaVTLjY/exec"
 
     def _esperar_dialog_underlay(timeout=10):
-        """Usar la nueva función optimizada"""
-        wait_for_overlay_to_disappear(driver, timeout)
+        try:
+            wait_for_overlay_to_disappear(driver, timeout)
+        except Exception as e:
+            print(f"⚠️ Error esperando overlay: {e}")
 
     for intento in range(1, max_reintentos + 1):
         print(f"\n==> [{intento}/{max_reintentos}] Descargando juicio para ficha {num_ficha}")
         try:
-            # 1️⃣ Volver al contenido
+            print("🔁 Reiniciando contexto de driver...")
             driver.switch_to.default_content()
-            _esperar_dialog_underlay()
+
+            print("⏳ Esperando iframe 'contenido'...")
             WebDriverWait(driver, 10).until(
                 EC.frame_to_be_available_and_switch_to_it(IFRAME_CONTENIDO_ID)
             )
+            print("✅ Iframe 'contenido' activado.")
 
-            # 2️⃣ Abrir el modal (OPTIMIZADO)
-            _esperar_dialog_underlay()
-            llamar_click_optimizado(XPATH_BOTON_ABRIR_BUSCADOR_FICHAS, timeout=30, by_method=By.ID)
-            _esperar_dialog_underlay()
+            print("🖱️ Click para abrir modal...")
+            click_with_javascript(driver, XPATH_BOTON_ABRIR_BUSCADOR_FICHAS, by_method=By.ID, timeout=10)
 
-            # 3️⃣ Cambiar a iframe modal
+            print("⏳ Esperando iframe 'modal'...")
             WebDriverWait(driver, 10).until(
                 EC.frame_to_be_available_and_switch_to_it(IFRAME_MODAL_ID)
             )
-            _esperar_dialog_underlay()
+            print("✅ Iframe 'modal' activado.")
 
-            # 4️⃣ Buscar ficha (OPTIMIZADO)
+            print(f"⌨️ Ingresando número de ficha '{num_ficha}'...")
             ingresar_texto_y_enviar("form:codigoFichaITX", num_ficha, by_method=By.ID)
+
+            print("🖱️ Click en botón de búsqueda...")
             if not click_with_javascript(driver, "form:buscarCBT", by_method=By.ID, timeout=20):
                 print("❌ Fallback JavaScript también falló para 'form:buscarCBT'")
             _esperar_dialog_underlay()
 
-            # 5️⃣ Ver ficha (OPTIMIZADO)
+            print("🔍 Esperando botón para ver ficha...")
             xpath_boton_ver = '//*[@id="form:dtFichas:0:cmdlnkShow"]'
             WebDriverWait(driver, 15).until(
                 EC.element_to_be_clickable((By.XPATH, xpath_boton_ver))
             )
-            llamar_click_optimizado(xpath_boton_ver, timeout=20, by_method=By.XPATH)
+            print("🖱️ Click en ver ficha...")
+            click_with_javascript(driver, xpath_boton_ver, by_method=By.XPATH, timeout=15)
 
-            # Salir del iframe modal
+            print("🔁 Volviendo a contexto principal...")
             driver.switch_to.default_content()
             _esperar_dialog_underlay()
-            WebDriverWait(driver, 15).until(
-                EC.element_to_be_clickable((By.XPATH,  '//*[@id="frmForma1:btnConsultar"]'))
-            )
 
-            # 6️⃣ Volver a iframe de contenido para consultar
+#------------------------------------------------------------------------------------------
+            # print("⚡ Forzando clic en el botón 'Consultar' inmediatamente...")
+            # try:
+            #     boton = driver.find_element(By.XPATH, '//*[@id="frmForma1:btnConsultar"]')
+            #     driver.execute_script("arguments[0].click();", boton)
+            #     print("✅ Clic realizado con éxito.")
+            # except Exception as e:
+            #     print(f"❌ Error al intentar hacer clic: {e}")
+#------------------------------------------------------------------------------------------
+            print("⏳ Cambiando nuevamente a iframe 'contenido'...")
             WebDriverWait(driver, 10).until(
                 EC.frame_to_be_available_and_switch_to_it(IFRAME_CONTENIDO_ID)
             )
             _esperar_dialog_underlay()
 
-            # 7️⃣ Consultar y descargar (OPTIMIZADO)
+            print("📂 Obteniendo lista de archivos previos en carpeta de descargas...")
             prev_files = set(os.listdir(DOWNLOAD_DIR))
+
+            print("🖱️ Click en botón 'Consultar' para generar descarga...")
             llamar_click_optimizado('//*[@id="frmForma1:btnConsultar"]', timeout=20, by_method=By.XPATH)
             _esperar_dialog_underlay()
 
+            print("⏳ Esperando archivo descargado...")
             nuevo_arch = esperar_nuevo_archivo(DOWNLOAD_DIR, prev_files, timeout=120)
+            print(f"✅ Archivo detectado: {nuevo_arch}")
 
-            # Esperar que se desbloquee el archivo
+            print("🔒 Esperando desbloqueo del archivo...")
             tiempo_limite = time.time() + 10
             while True:
                 try:
@@ -1139,7 +1157,7 @@ def descargar_juicio_evaluacion_por_ficha_optimizado(ficha_data: dict, max_reint
                         raise
                     time.sleep(0.5)
 
-            # Renombrar
+            print("📦 Renombrando archivo...")
             _, ext = os.path.splitext(nuevo_arch)
             ext = ext.lower() if ext.lower() in {".xls", ".xlsx", ".csv", ".pdf"} else ".xls"
             destino = os.path.join(DOWNLOAD_DIR, f"{num_ficha}_{slug_prog}{ext}")
@@ -1152,31 +1170,35 @@ def descargar_juicio_evaluacion_por_ficha_optimizado(ficha_data: dict, max_reint
             shutil.move(nuevo_arch, destino)
             print(f"✅ ({intento}) Archivo renombrado a: {os.path.basename(destino)}")
 
-            # Verificación de cambio real de contenido
             from pathlib import Path
             archivo_path = Path(destino)
+            print("📋 Verificando si el archivo contiene contenido nuevo o modificado...")
             if actualizar_si_cambia(num_ficha, archivo_path):
                 print(f"✅ Contenido nuevo o modificado, archivo conservado.")
             else:
                 print(f"⚠️ Archivo sin cambios. Eliminado.")
                 archivo_path.unlink()
 
-            # Actualizar estado en Google Sheets
+            print("📤 Actualizando estado en Google Sheets...")
             url_estado = f"{url_base_estado}?action=update&ficha={num_ficha}&estado=descargado"
             try:
                 resp_estado = requests.get(url_estado)
                 if resp_estado.ok:
                     print(f"✅ Estado actualizado en Google Sheets para ficha {num_ficha}.")
                 else:
-                    print(f"⚠️ Error al actualizar estado para ficha {num_ficha}: {resp_estado.status_code}")
+                    print(f"⚠️ Error al actualizar estado: {resp_estado.status_code}")
             except Exception as ex:
                 print(f"⚠️ Error enviando estado: {ex}")
 
             return True
 
         except Exception as e:
-            print(f"⚠️  ({intento}) Falló intento para ficha {num_ficha}: {e}")
-            driver.switch_to.default_content()
+            print(f"⚠️  ({intento}) Falló intento para ficha {num_ficha}: {type(e).__name__}: {e}")
+            traceback.print_exc()
+            try:
+                driver.switch_to.default_content()
+            except:
+                print("⚠️ No se pudo volver al contexto principal del driver.")
             _esperar_dialog_underlay()
             if intento == max_reintentos:
                 print(f"❌ No se pudo descargar el juicio de {num_ficha} tras {max_reintentos} intentos.")
@@ -1190,9 +1212,11 @@ def descargar_juicio_evaluacion_por_ficha_optimizado(ficha_data: dict, max_reint
                 except Exception as ex:
                     print(f"⚠️ Error enviando estado 'fallido': {ex}")
                 return False
+            print("⏳ Esperando 2 segundos antes de reintentar...")
             time.sleep(2)
 
     return False
+
 
 
 
@@ -1457,8 +1481,16 @@ def ejecutar_scraper():
         # 2. Navegación por el menú
         print("\n🧭 Navegando por el menú...")
         print("📂 Navegando a 'Ejecución a la formación'...")
-        click_with_javascript(driver, XPATH_MENU_EJECUCION_FORMACION_GDC, by_method=By.XPATH)
+        try:
+            elemento = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, XPATH_MENU_EJECUCION_FORMACION_GDC))
+            )
+            driver.execute_script("arguments[0].click();", elemento)
+            print(f"✅ Clic exitoso con JavaScript en: '{XPATH_MENU_EJECUCION_FORMACION_GDC}'")
+        except Exception as e:
+            print(f"❌ Error en clic JavaScript para '{XPATH_MENU_EJECUCION_FORMACION_GDC}': {e}")
         time.sleep(1)
+
 
 
         print("📂 Navegando a 'Administrar Ruta de Aprendizaje'...")
@@ -1470,8 +1502,11 @@ def ejecutar_scraper():
         time.sleep(1)
 
         print("⚖️ Navegando a 'Reportes de Juicios de Evaluación'...")
-        llamar_click_optimizado(XPATH_MENU_REPORTES_JUICIOS_EVALUACION_GDC)
+        elemento = driver.find_element(By.XPATH, XPATH_MENU_REPORTES_JUICIOS_EVALUACION_GDC)
+        driver.execute_script("arguments[0].click();", elemento)
         time.sleep(3)
+
+
 
         # 3. Cambiar a iframe 'contenido'
         driver.switch_to.default_content()
@@ -1485,18 +1520,23 @@ def ejecutar_scraper():
             print(f"❌ ERROR: No se pudo cambiar al iframe 'contenido': {iframe_e}")
             raise
 
-        esperar_cualquier_overlay_desaparecer(timeout=20)
+        # esperar_cualquier_overlay_desaparecer(timeout=20)
 
-        print("🔍 Haciendo clic en el botón para abrir el buscador de fichas sea clickeable...")
+       
+
+        # ...
+        print("🔍 Esperando a que el botón de buscador de fichas esté presente en el DOM...")
+        start = time.time()
         try:
-            WebDriverWait(driver, 15).until(
-                EC.element_to_be_clickable((By.ID, XPATH_BOTON_ABRIR_BUSCADOR_FICHAS))   
+            elemento = WebDriverWait(driver, 30).until(
+                EC.presence_of_element_located((By.ID, XPATH_BOTON_ABRIR_BUSCADOR_FICHAS))
             )
-        except Exception as wait_e:
-            print(f"⚠️ Advertencia: el botón no estuvo clickeable a tiempo: {wait_e}")
+            end = time.time()
+            print(f"🖱️ Ejecutando clic con JavaScript... (espera: {end - start:.2f} segundos)")
+            driver.execute_script("arguments[0].click();", elemento)
+        except Exception as e:
+            print(f"❌ Error al hacer clic con JavaScript: {e}")
 
-        print("🖱️ Haciendo clic en el botón para abrir el buscador de fichas...")
-        llamar_click_optimizado(XPATH_BOTON_ABRIR_BUSCADOR_FICHAS, timeout=30, by_method=By.ID)
 
         # 4. Cambiar al iframe anidado del modal
         print("\n🖼️ Buscando iframe anidado del modal...")
