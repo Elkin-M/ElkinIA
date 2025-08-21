@@ -8,6 +8,9 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException, ElementClickInterceptedException, StaleElementReferenceException, NoSuchFrameException
 import time
+#----------------------Hilos-----------------------------
+from concurrent.futures import ThreadPoolExecutor
+#--------------------------------------------------------
 import traceback
 import json
 import requests
@@ -15,8 +18,8 @@ import pandas as pd
 from datetime import datetime, timedelta
 import sqlite3
 import os, re, time, shutil
-from pathlib import Path
-from backend.uploader_drive import subir_todos_los_archivos_a_drive
+from backend.uploader_drive import subir_archivo_individual_a_drive
+
 
 # --- Configuración para el control de versiones ---
 from hashlib import sha256
@@ -27,6 +30,10 @@ from pathlib import Path
 GAS_URL = "https://script.google.com/macros/s/AKfycby17IUaE5GI71cIUjewXA9_2nuHJgQiAVgy7d2_oi53nH9efjzBqWilSTzEAKPbkR0z/exec"
 driver = None  # Solo declara la variable, no inicializa el driver
 VERSIONS_FILE = Path(__file__).resolve().parent / "datos" / "versiones_juicios.json"
+
+#----------------------Hilos----------------------------------
+executor_postprocesamiento = ThreadPoolExecutor(max_workers=6)
+#-------------------------------------------------------------
 
 # ====================================================================
 # OPTIMIZACIÓN DE CLICS - BASADO EN ANÁLISIS DE LOGS
@@ -574,9 +581,23 @@ def actualizar_si_cambia(ficha_id: str, archivo_path: Path) -> bool:
         guardar_versiones(versiones)
         return True
     return False
-#-----------------------------------------------------------------------
+#------------------------Funcionamiento en hilos------------------------------
 
-#---------- funcion para subir archivos a drive ------------------------
+def postprocesamiento_ficha(ficha_data: dict, archivo_path: Path):
+    try:
+        print(f"🚀 [BG] Subiendo ficha {ficha_data['NumeroFicha']} a Google Drive...")
+        subir_archivo_individual_a_drive(ficha_data, archivo_path)
+        print(f"✅ [BG] Subida completada para ficha {ficha_data['NumeroFicha']}.")
+
+        print(f"📤 [BG] Actualizando estado en Google Sheets...")
+        url_estado = f"https://script.google.com/macros/s/AKfycbxA5vH9uibvvjOjY1rBumhJ5ecGIAD5iuzeShlaaDrUvfwo2NeudiRjfFLoRCaVTLjY/exec?action=update&ficha={ficha_data['NumeroFicha']}&estado=subido"
+        resp = requests.get(url_estado)
+        if resp.ok:
+            print(f"✅ [BG] Estado actualizado en Sheets.")
+        else:
+            print(f"⚠️ [BG] Error al actualizar estado: {resp.status_code}")
+    except Exception as e:
+        print(f"❌ [BG] Error postprocesando ficha {ficha_data['NumeroFicha']}: {e}")
 
 #-----------------------------------------------------------------------
 
@@ -1645,6 +1666,15 @@ def descargar_juicios_evaluacion():
             if success:
                 print(f"✅ Descarga de juicio completada para ficha {ficha_dict['NumeroFicha']}.")
                 actualizar_estado_ficha(ficha_dict["NumeroFicha"])  # 👉 Cambia estado a 'descargado'
+                #---------------------------hilo---------------------------
+                #lanzar prcesamiento en segundo plano
+                archivo_path = Path("reportes_juicios") / f"{ficha_dict['NumeroFicha']}_{ficha_dict['NombrePrograma']}.xls"
+                executor_postprocesamiento.submit(
+                    postprocesamiento_ficha,
+                    ficha_dict,
+                    archivo_path
+                )
+                #----------------------------------------------------------
                 # Aquí podrías añadir lógica adicional, como registrar la descarga exitosa en la DB
             else:
                 print(f"❌ Fallo en la descarga del juicio para ficha {ficha_dict['NumeroFicha']}. Continuando con la siguiente.")
@@ -1657,9 +1687,12 @@ def descargar_juicios_evaluacion():
         except Exception as screenshot_e:
             print(f"No se pudo guardar la captura de pantalla: {screenshot_e}")
     finally:
-        print("\n🔁 Subiendo archivos descargados a Google Drive...")
-        subir_todos_los_archivos_a_drive()
-        print("✅ Archivos subidos a Google Drive.")
+        # print("\n🔁 Subiendo archivos descargados a Google Drive...")
+        # subir_todos_los_archivos_a_drive()
+        # print("✅ Archivos subidos a Google Drive.")
+        print("\n⏳ Esperando que finalicen tareas de postprocesamiento en segundo plano...")
+        executor_postprocesamiento.shutdown(wait=True)
+        print("✅ Todas las tareas en segundo plano han terminado.")
 
         print("\nProceso de automatización completado. Cerrando navegador...")
         driver.quit()

@@ -77,6 +77,20 @@ def subir_archivo_a_drive(servicio, ruta_archivo: Path):
         print(f"❌ Error subiendo {ruta_archivo.name}: {e}")
         traceback.print_exc()
         return False
+    
+
+def subir_archivo_individual_a_drive(ficha_data: dict, archivo_path: Path):
+    """
+    Sube un solo archivo .xls a la carpeta específica en Google Drive.
+    """
+    print(f"📤 Iniciando subida individual para ficha {ficha_data['NumeroFicha']}...")
+
+    servicio = obtener_servicio_drive()
+    if not servicio:
+        print("❌ No se pudo obtener el servicio de Drive.")
+        return False
+
+    return subir_archivo_a_drive(servicio, archivo_path)
 
 
 def subir_todos_los_archivos_a_drive(directorio_local: str = "../reportes_juicios"):
