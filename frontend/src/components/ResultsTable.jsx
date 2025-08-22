@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Search } from "lucide-react";
-import { Link } from "react-router-dom";
 import { styles } from './styles.js';
 
 function ResultsTable({ data, onDownloadSingle, onBulkDownload, loading }) {
@@ -47,7 +46,7 @@ function ResultsTable({ data, onDownloadSingle, onBulkDownload, loading }) {
     <div style={styles.card}>
       <div style={{ overflowX: 'auto' }}>
         <table style={styles.table}>
-          <thead style={styles.tableHeader}>
+          <thead>
             <tr>
               {[
                 { key: "numero_ficha", label: "# Ficha" },
@@ -154,8 +153,11 @@ function ResultsTable({ data, onDownloadSingle, onBulkDownload, loading }) {
                     >
                       ⬇️ Descargar Juicio
                     </button>
-                    <Link
-                      to={`/juicios/${ficha.numero_ficha}`}
+                    {/* Botón que te dirige a la URL del backend que sirve el HTML */}
+                    <a
+                      href={`http://127.0.0.1:5000/juicios-web`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       style={{
                         ...styles.actionButton,
                         backgroundColor: '#10B981',
@@ -168,7 +170,7 @@ function ResultsTable({ data, onDownloadSingle, onBulkDownload, loading }) {
                       }}
                     >
                       👁️ Ver Juicios
-                    </Link>
+                    </a>
                   </div>
                 </td>
               </tr>
