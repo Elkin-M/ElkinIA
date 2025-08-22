@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
-import { Search, Filter, Download, MapPin, Calendar, Building, Users } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Search, Filter, Download, MapPin, Calendar, Building, Users, Play } from "lucide-react"; // Importa el nuevo ícono 'Play'
 import { styles, injectStyles } from './styles.js';
 
 // Al inicio del componente
 injectStyles();
 
-// Luego usa los estilos como: style={styles.card}
 // ==============================
 // Componente HomeForm mejorado
 // ==============================
@@ -72,6 +71,18 @@ function HomeForm({ onSubmit }) {
     </div>
   );
 
+  const getButtonText = () => {
+    if (action === "mapear") return "Mapear Fichas";
+    if (action === "descargar") return "Descargar Juicios";
+    if (action === "completo") return "Iniciar Proceso Completo";
+  };
+
+  const getButtonIcon = () => {
+    if (action === "mapear") return <MapPin size={20} />;
+    if (action === "descargar") return <Download size={20} />;
+    if (action === "completo") return <Play size={20} />;
+  };
+
   return (
     <div style={styles.card}>
       <div style={styles.header}>
@@ -103,6 +114,13 @@ function HomeForm({ onSubmit }) {
               title="Descargar Juicios"
               description="Exportar juicios evaluativos en formato Excel"
               isSelected={action === "descargar"}
+            />
+            <ActionCard
+              value="completo"
+              icon={Play}
+              title="Proceso Completo"
+              description="Mapear y descargar juicios automáticamente"
+              isSelected={action === "completo"}
             />
           </div>
         </div>
@@ -210,12 +228,13 @@ function HomeForm({ onSubmit }) {
               e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
             }}
           >
-            {action === "mapear" ? <MapPin size={20} /> : <Download size={20} />}
-            {action === "mapear" ? "Mapear Fichas" : "Descargar Juicios"}
+            {getButtonIcon()}
+            {getButtonText()}
           </button>
         </div>
       </div>
     </div>
   );
 }
+
 export default HomeForm;
