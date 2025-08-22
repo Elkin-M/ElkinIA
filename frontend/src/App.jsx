@@ -1,17 +1,23 @@
+// src/App.jsx
 import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HomeForm from "./components/HomeForm";
 import SearchBar from "./components/SearchBar";
 import ResultsTable from "./components/ResultsTable";
+import JuiciosPage from "./components/JuiciosPage"; // Importa el nuevo componente
 import { styles } from './components/styles.js';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-export default function App() {
+function AppContent() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
   const [query, setQuery] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [progress, setProgress] = useState(null);
+
+  // ... Todo tu código existente para el estado, useEffect y las funciones de manejo
+  // (fetchFichas, handleSubmit, handleDownloadSingle, handleBulkDownload)
 
   const fetchFichas = async () => {
     setLoading(true);
@@ -458,5 +464,16 @@ export default function App() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<AppContent />} />
+        <Route path="/juicios/:numeroFicha" element={<JuiciosPage />} />
+      </Routes>
+    </Router>
   );
 }
