@@ -1222,7 +1222,7 @@
 
     <script>
         // ===== VARIABLES GLOBALES =====
-        const API_BASE = 'https://6b9613693b05.ngrok-free.app/juicios';
+        const API_BASE = 'https://a38bd572d8e8.ngrok-free.app/juicios';
         let currentSection = 'dashboard';
 
         // ===== NAVEGACIÓN =====
@@ -1296,7 +1296,7 @@
             ocultarError();
 
             try {
-                const response = await fetch(`https://6b9613693b05.ngrok-free.app/juicios/estadisticas/resumen`, {
+                const response = await fetch(`https://a38bd572d8e8.ngrok-free.app/juicios/estadisticas/resumen`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1327,7 +1327,7 @@
 
             } catch (error) {
                 console.error('Error en loadDashboardStats:', error);
-                mostrarError(`Error de conexión: ${error.message}. Verifique que el servidor esté ejecutándose en https://6b9613693b05.ngrok-free.app`);
+                mostrarError(`Error de conexión: ${error.message}. Verifique que el servidor esté ejecutándose en https://a38bd572d8e8.ngrok-free.app`);
 
                 // Mostrar datos de ejemplo si hay error de conexión
                 mostrarDatosEjemplo();
@@ -1402,7 +1402,7 @@
             if (competencia) params.append('competencia', competencia);
             if (juicio) params.append('juicio', juicio);
 
-            const url = `https://6b9613693b05.ngrok-free.app/juicios/?${params.toString()}`;
+            const url = `https://a38bd572d8e8.ngrok-free.app/juicios/?${params.toString()}`;
 
             mostrarLoading(true);
             ocultarError();
@@ -1432,7 +1432,7 @@
 
             } catch (error) {
                 console.error('Error en buscarJuicios:', error);
-                mostrarError(`Error de conexión: ${error.message}. Verifique que el servidor esté ejecutándose en https://6b9613693b05.ngrok-free.app`);
+                mostrarError(`Error de conexión: ${error.message}. Verifique que el servidor esté ejecutándose en https://a38bd572d8e8.ngrok-free.app`);
 
                 // Mostrar mensaje informativo si no hay conexión
                 mostrarResultadosEjemplo();
@@ -1569,7 +1569,7 @@
             ocultarError();
 
             try {
-                const response = await fetch(`https://6b9613693b05.ngrok-free.app/juicios/estadisticas/resumen`, {
+                const response = await fetch(`https://a38bd572d8e8.ngrok-free.app/juicios/estadisticas/resumen`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1595,7 +1595,7 @@
 
             } catch (error) {
                 console.error('Error en verEstadisticas:', error);
-                mostrarError(`Error de conexión: ${error.message}. Verifique que el servidor esté ejecutándose en https://6b9613693b05.ngrok-free.app`);
+                mostrarError(`Error de conexión: ${error.message}. Verifique que el servidor esté ejecutándose en https://a38bd572d8e8.ngrok-free.app`);
             } finally {
                 mostrarLoading(false);
             }
@@ -1688,7 +1688,7 @@
             resultsDiv.innerHTML = `
                 <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
                     <i class="fas fa-exclamation-triangle" style="color: #856404; margin-right: 0.5rem;"></i>
-                    <strong>Sin conexión al servidor:</strong> Para ver datos reales, asegúrese de que su API FastAPI esté ejecutándose en <code>https://6b9613693b05.ngrok-free.app</code>
+                    <strong>Sin conexión al servidor:</strong> Para ver datos reales, asegúrese de que su API FastAPI esté ejecutándose en <code>https://a38bd572d8e8.ngrok-free.app</code>
                 </div>
                 
                 <div class="card">
@@ -1762,7 +1762,7 @@
         // ===== FUNCIÓN PARA PROBAR CONEXIÓN =====
         async function probarConexionAPI() {
             try {
-                const response = await fetch('https://6b9613693b05.ngrok-free.app/', {
+                const response = await fetch('https://a38bd572d8e8.ngrok-free.app/', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
