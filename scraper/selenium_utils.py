@@ -33,7 +33,7 @@ class WebDriverManager:
     def _detectar_ruta_driver(self):
         """Detecta la ruta del chromedriver según el sistema"""
         rutas_posibles = [
-            r"D:\Users\Lenovo\Documents\chrome-win\chromedriver.exe",  # Ruta original
+            r"/home/sennova/Documentos/sennova/chrome-win/chromedriver" # Ruta original
             r"C:\chromedriver\chromedriver.exe",  # Ruta común Windows
             "/usr/local/bin/chromedriver",  # Ruta común Linux/Mac
             "chromedriver.exe",  # En PATH

@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Ruta a la carpeta donde se almacenan los reportes
 RUTA_REPORTES = Path(__file__).resolve().parent.parent / "reportes_juicios"
-BASE_URL = "https://7f8faa250508.ngrok-free.app"  # ✅ URL actualizada
+BASE_URL = "https://033083883831.ngrok-free.app"  # ✅ URL actualizada
 
 # Crear carpeta de reportes si no existe
 RUTA_REPORTES.mkdir(exist_ok=True)
@@ -42,6 +42,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        
         # "https://elkin-eym8red0s-elkin-ms-projects.vercel.app",  # Vercel actual
         # "https://elkin-lemmgayal-elkin-ms-projects.vercel.app",   # Vercel anterior
         # "https://gerardoia.onrender.com",                         # ✅ Render (frontend actual)

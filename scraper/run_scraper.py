@@ -199,6 +199,10 @@ def get_driver():
         chrome_options = Options()
         chrome_options.add_argument("--start-maximized")
         chrome_options.add_argument("--disable-notifications")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--remote-debugging-port=9222")
+
         
         # Configuraciones para descarga automática
         DOWNLOAD_DIR = os.path.join(os.getcwd(), "reportes_juicios")
@@ -215,7 +219,7 @@ def get_driver():
         chrome_options.add_experimental_option("prefs", prefs)
         
         # Ruta del driver
-        ruta_driver = r"D:\Users\Lenovo\Documents\chrome-win\chromedriver.exe"
+        ruta_driver = "/usr/local/bin/chromedriver"
         service = Service(ruta_driver)
         
         # Crear el driver
@@ -259,7 +263,10 @@ def inicializar_driver():
         chrome_options = Options()
         chrome_options.add_argument("--start-maximized")
         chrome_options.add_argument("--disable-notifications")
-        
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--remote-debugging-port=9222")
+
         # Configuraciones para descarga automática
         prefs = {
             "download.default_directory": DOWNLOAD_DIR,
@@ -270,7 +277,7 @@ def inicializar_driver():
         chrome_options.add_experimental_option("prefs", prefs)
 
         # Ruta del driver
-        ruta_driver = r"D:\Users\Lenovo\Documents\chrome-win\chromedriver.exe"
+        ruta_driver = "/usr/local/bin/chromedriver"
         service = Service(ruta_driver)
 
         # Crear el driver
@@ -302,7 +309,7 @@ class WebDriverManager:
     def __init__(self):
         self.driver = None
         self.download_dir = os.path.join(os.getcwd(), "reportes_juicios")
-        self.ruta_driver = r"D:\Users\Lenovo\Documents\chrome-win\chromedriver.exe"
+        self.ruta_driver = "/usr/local/bin/chromedriver"
         
     def get_driver(self):
         """Retorna el driver, inicializándolo si es necesario"""
@@ -323,6 +330,10 @@ class WebDriverManager:
         chrome_options = Options()
         chrome_options.add_argument("--start-maximized")
         chrome_options.add_argument("--disable-notifications")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--remote-debugging-port=9222")
+
         
         prefs = {
             "download.default_directory": self.download_dir,
@@ -411,7 +422,7 @@ XPATH_ESTADO_TEMPLATE = '//*[@id="frmConsulta:dtResultadosJuicios:{}:siAprobado"
 # XPath para el overlay de carga (se usa para esperar que desaparezca)
 XPATH_BLOCKUI_OVERLAY = "//div[contains(@class, 'blockUI blockOverlay')]"
 IFRAME_MODAL_ID = "modalDialogContentviewDialog2" # ID del iframe del modal
-DOWNLOAD_DIR = r"C:\Users\Lenovo\Jupyter\IDAutoSENA\reportes_juicios"   # ⚠️ Ajusta tu carpeta de descargas 
+DOWNLOAD_DIR = "/home/sennova/Documentos/sennova/reportes_juicios"   # ⚠️ Ajusta tu carpeta de descargas 
 
 # --- Funciones de Base de Datos ---
 
@@ -1154,14 +1165,14 @@ def descargar_juicio_evaluacion_por_ficha_optimizado(ficha_data: dict, max_reint
             WebDriverWait(driver, 10).until(
                 EC.frame_to_be_available_and_switch_to_it(IFRAME_CONTENIDO_ID)
             )
-            _esperar_dialog_underlay()
+            #_esperar_dialog_underlay()
 
             print("📂 Obteniendo lista de archivos previos en carpeta de descargas...")
             prev_files = set(os.listdir(DOWNLOAD_DIR))
 
             print("🖱️ Click en botón 'Consultar' para generar descarga...")
             llamar_click_optimizado('//*[@id="frmForma1:btnConsultar"]', timeout=20, by_method=By.XPATH)
-            _esperar_dialog_underlay()
+            #_esperar_dialog_underlay()
 
             print("⏳ Esperando archivo descargado...")
             nuevo_arch = esperar_nuevo_archivo(DOWNLOAD_DIR, prev_files, timeout=120)
@@ -1586,13 +1597,13 @@ def ejecutar_scraper():
         # 5. Aplicar filtros
         print("\n🔧 Aplicando filtros de búsqueda...")
         current_date = datetime.now()
-        fecha_inicio_busqueda = None
+        fecha_inicio_busqueda = "09/08/2025"
 
         dep_busqueda = "BOLÍVAR"
-        mun_busqueda = "CARTAGENA"
-        jornada_busqueda = "NOCTURNA"
+        mun_busqueda = None
+        jornada_busqueda = None
         codigo_ficha_busqueda = None
-        fecha_final_busqueda = "09/07/2025"
+        fecha_final_busqueda = None
 
         filtros_actuales = {
             'codigo_ficha': codigo_ficha_busqueda,
