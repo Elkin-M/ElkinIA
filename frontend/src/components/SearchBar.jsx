@@ -6,15 +6,25 @@ import { styles } from './styles.js';
 // ==============================
 // Componente SearchBar mejorado
 // ==============================
-function SearchBar({ query, setQuery, resultCount }) {
+function SearchBar({ query, setQuery, resultCount, totalCount }) {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
     <div style={styles.card}>
-      <div style={styles.searchContainer}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={styles.searchInputContainer}>
-            <Search size={20} style={styles.searchIcon} />
+      <div style={{ padding: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
+          <div style={{ 
+            position: 'relative', 
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+          }}>
+            <Search size={20} style={{
+              position: 'absolute',
+              left: '16px',
+              color: '#6B7280',
+              zIndex: 1,
+            }} />
             <input
               type="text"
               placeholder="Buscar por número de ficha, nombre del programa, centro..."
@@ -23,7 +33,9 @@ function SearchBar({ query, setQuery, resultCount }) {
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               style={{
-                ...styles.searchInput,
+                ...styles.input,
+                paddingLeft: '48px',
+                width: '100%',
                 ...(isFocused ? styles.inputFocus : {}),
               }}
             />
@@ -32,19 +44,15 @@ function SearchBar({ query, setQuery, resultCount }) {
             <button
               onClick={() => setQuery("")}
               style={{
-                background: 'none',
+                background: '#EF4444',
+                color: 'white',
                 border: 'none',
-                padding: '8px 16px',
-                color: '#6B7280',
+                padding: '12px 20px',
+                borderRadius: '8px',
                 cursor: 'pointer',
                 fontSize: '14px',
                 fontWeight: '500',
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.color = '#1F2937';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.color = '#6B7280';
+                transition: 'background-color 0.2s ease',
               }}
             >
               Limpiar
@@ -55,14 +63,14 @@ function SearchBar({ query, setQuery, resultCount }) {
           <p style={{
             fontSize: '14px',
             color: '#6B7280',
-            marginTop: '8px',
-            margin: '8px 0 0 0',
+            margin: 0,
           }}>
-            {resultCount} resultado{resultCount !== 1 ? 's' : ''} para "{query}"
+            {resultCount} de {totalCount} resultado{resultCount !== 1 ? 's' : ''} para "{query}"
           </p>
         )}
       </div>
     </div>
   );
 }
+
 export default SearchBar;

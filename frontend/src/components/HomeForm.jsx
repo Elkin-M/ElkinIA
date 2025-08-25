@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Search, Filter, Download, MapPin, Calendar, Building, Users, Play } from "lucide-react"; // Importa el nuevo ícono 'Play'
 import { styles, injectStyles } from './styles.js';
+import e from "cors";
 
 // Al inicio del componente
 injectStyles();
@@ -8,16 +9,17 @@ injectStyles();
 // ==============================
 // Componente HomeForm mejorado
 // ==============================
-const defaultFilters = {
-  regional: "BOLÍVAR",
-  centro: "CARTAGENA",
-  jornada: "DIURNA",
-  fecha: new Date().toISOString().slice(0, 10),
-};
-
-function HomeForm({ onSubmit }) {
+// ==============================
+// Componente HomeForm Mejorado
+// ==============================
+function HomeForm({ onSubmit, loading }) {
   const [action, setAction] = useState("mapear");
-  const [filters, setFilters] = useState(defaultFilters);
+  const [filters, setFilters] = useState({
+    regional: "BOLÍVAR",
+    centro: "CARTAGENA",
+    jornada: "DIURNA",
+    fecha: new Date().toISOString().slice(0, 10),
+  });
   const [focusedInput, setFocusedInput] = useState(null);
 
   const handleChange = (e) => {
@@ -35,18 +37,6 @@ function HomeForm({ onSubmit }) {
         ...(isSelected ? styles.actionCardSelected : {}),
       }}
       onClick={() => setAction(value)}
-      onMouseEnter={(e) => {
-        if (!isSelected) {
-          e.target.style.borderColor = '#D1D5DB';
-          e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isSelected) {
-          e.target.style.borderColor = '#E5E7EB';
-          e.target.style.boxShadow = 'none';
-        }
-      }}
     >
       <div style={styles.actionCardContent}>
         <div style={{
@@ -60,14 +50,6 @@ function HomeForm({ onSubmit }) {
           <p style={styles.actionDescription}>{description}</p>
         </div>
       </div>
-      <input
-        type="radio"
-        name="action"
-        value={value}
-        checked={isSelected}
-        onChange={() => setAction(value)}
-        style={styles.radioInput}
-      />
     </div>
   );
 
@@ -85,20 +67,20 @@ function HomeForm({ onSubmit }) {
 
   return (
     <div style={styles.card}>
-      <div style={styles.header}>
-        <h1 style={styles.headerTitle}>
-          <Filter size={32} />
+      <div style={styles.cardHeader}>
+        <h2 style={styles.cardTitle}>
+          <Filter size={24} />
           Sistema de Gestión de Fichas
-        </h1>
-        <p style={styles.headerSubtitle}>Selecciona una acción y configura los filtros</p>
+        </h2>
+        <p style={styles.cardSubtitle}>Selecciona una acción y configura los filtros</p>
       </div>
 
-      <div style={styles.formContent}>
+      <div style={styles.formContainer}>
         <div>
-          <h2 style={styles.sectionTitle}>
-            <Users size={20} color="#3B82F6" />
+          <h3 style={styles.sectionTitle}>
+            <Users size={20} />
             Acción a Realizar
-          </h2>
+          </h3>
           
           <div style={styles.actionGrid}>
             <ActionCard
@@ -126,10 +108,10 @@ function HomeForm({ onSubmit }) {
         </div>
 
         <div>
-          <h2 style={styles.sectionTitle}>
-            <Filter size={20} color="#3B82F6" />
+          <h3 style={styles.sectionTitle}>
+            <Filter size={20} />
             Filtros de Búsqueda
-          </h2>
+          </h3>
 
           <div style={styles.filtersGrid}>
             <div style={styles.inputGroup}>
@@ -215,19 +197,24 @@ function HomeForm({ onSubmit }) {
           </div>
         </div>
 
-        <div style={styles.buttonCenter}>
+        <div style={{ textAlign: 'center' }}>
           <button
             onClick={handleSubmit}
-            style={styles.button}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'scale(1.05)';
-              e.target.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'scale(1)';
-              e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+            disabled={loading}
+            style={{
+              ...styles.primaryButton,
+              opacity: loading ? 0.7 : 1,
+              cursor: loading ? 'not-allowed' : 'pointer',
             }}
           >
+            {loading && <div style={{
+              width: '16px',
+              height: '16px',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderTop: '2px solid white',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+            }}></div>}
             {getButtonIcon()}
             {getButtonText()}
           </button>

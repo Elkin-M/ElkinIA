@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Ruta a la carpeta donde se almacenan los reportes
 RUTA_REPORTES = Path(__file__).resolve().parent.parent / "reportes_juicios"
-BASE_URL = "https://b856ce9fc691.ngrok-free.app"  # ✅ URL actualizada
+BASE_URL = "https://6b9613693b05.ngrok-free.app"  # ✅ URL actualizada
 
 # Crear carpeta de reportes si no existe
 RUTA_REPORTES.mkdir(exist_ok=True)
@@ -50,7 +50,7 @@ app.add_middleware(
         # "http://localhost:8080"                                   # Otros puertos
         # "http://127.0.0.1:50268",     # donde se ejecuta tu HTML
         # "http://localhost:5500",      # LiveServer si usas VSCode
-        # "https://aa6a52a8c27f.ngrok-free.app"
+        # "https://6b9613693b05.ngrok-free.app"
          "*"  
     ],
     allow_credentials=True,
