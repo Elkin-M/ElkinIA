@@ -553,7 +553,7 @@ const JuiciosPage = () => {
   // Results state
   const [consultaResults, setConsultaResults] = useState(null);
   
-  const API_BASE = 'https://d2edd3b36922.ngrok-free.app /juicios';
+  const API_BASE = 'https://d2edd3b36922.ngrok-free.app/juicios';
   
   // Navigation items
   const navItems = [

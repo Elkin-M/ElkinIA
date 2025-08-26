@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Ruta a la carpeta donde se almacenan los reportes
 RUTA_REPORTES = Path(__file__).resolve().parent.parent / "reportes_juicios"
-BASE_URL = "https://d2edd3b36922.ngrok-free.app "  # ✅ URL actualizada
+BASE_URL = "https://d2edd3b36922.ngrok-free.app"  # ✅ URL actualizada
 
 # Crear carpeta de reportes si no existe
 RUTA_REPORTES.mkdir(exist_ok=True)
