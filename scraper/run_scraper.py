@@ -8,6 +8,7 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException, ElementClickInterceptedException, StaleElementReferenceException, NoSuchFrameException
 import time
+import platform
 #----------------------Hilos-----------------------------
 from concurrent.futures import ThreadPoolExecutor
 #--------------------------------------------------------
@@ -219,7 +220,7 @@ def get_driver():
         chrome_options.add_experimental_option("prefs", prefs)
         
         # Ruta del driver
-        ruta_driver = "/usr/local/bin/chromedriver"
+        ruta_driver = r"D:\Users\Lenovo\Documents\chrome-win\chromedriver.exe"
         service = Service(ruta_driver)
         
         # Crear el driver
@@ -277,7 +278,7 @@ def inicializar_driver():
         chrome_options.add_experimental_option("prefs", prefs)
 
         # Ruta del driver
-        ruta_driver = "/usr/local/bin/chromedriver"
+        ruta_driver = r"D:\Users\Lenovo\Documents\chrome-win\chromedriver.exe"
         service = Service(ruta_driver)
 
         # Crear el driver
@@ -309,7 +310,7 @@ class WebDriverManager:
     def __init__(self):
         self.driver = None
         self.download_dir = os.path.join(os.getcwd(), "reportes_juicios")
-        self.ruta_driver = "/usr/local/bin/chromedriver"
+        self.ruta_driver = r"D:\Users\Lenovo\Documents\chrome-win\chromedriver.exe"
         
     def get_driver(self):
         """Retorna el driver, inicializándolo si es necesario"""
@@ -422,7 +423,10 @@ XPATH_ESTADO_TEMPLATE = '//*[@id="frmConsulta:dtResultadosJuicios:{}:siAprobado"
 # XPath para el overlay de carga (se usa para esperar que desaparezca)
 XPATH_BLOCKUI_OVERLAY = "//div[contains(@class, 'blockUI blockOverlay')]"
 IFRAME_MODAL_ID = "modalDialogContentviewDialog2" # ID del iframe del modal
-DOWNLOAD_DIR = "/home/sennova/Documentos/sennova/reportes_juicios"   # ⚠️ Ajusta tu carpeta de descargas 
+if platform.system() == "Windows":
+    DOWNLOAD_DIR = r"C:\Users\Lenovo\Jupyter\IDAutoSENA\reportes_juicios"
+else:
+    DOWNLOAD_DIR = "/home/sennova/Documentos/sennova/reportes_juicios"
 
 # --- Funciones de Base de Datos ---
 
