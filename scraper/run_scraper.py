@@ -205,7 +205,7 @@ def get_driver():
 
         
         # Configuraciones para descarga automática
-        DOWNLOAD_DIR = os.path.join(os.getcwd(), "reportes_juicios")
+        DOWNLOAD_DIR = "/home/sennova/Documentos/sennova/reportes_juicios"
         if not os.path.exists(DOWNLOAD_DIR):
             os.makedirs(DOWNLOAD_DIR)
             print(f"Carpeta de descargas creada: {DOWNLOAD_DIR}")
