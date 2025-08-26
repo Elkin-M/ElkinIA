@@ -42,7 +42,6 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        
         # "https://elkin-eym8red0s-elkin-ms-projects.vercel.app",  # Vercel actual
         # "https://elkin-lemmgayal-elkin-ms-projects.vercel.app",   # Vercel anterior
         # "https://gerardoia.onrender.com",                         # ✅ Render (frontend actual)

@@ -206,11 +206,10 @@ def get_driver():
 
         
         # Configuraciones para descarga automática
-        DOWNLOAD_DIR = os.path.join(os.getcwd(), "reportes_juicios")
-        if not os.path.exists(DOWNLOAD_DIR):
-            os.makedirs(DOWNLOAD_DIR)
-            print(f"Carpeta de descargas creada: {DOWNLOAD_DIR}")
-        
+        DOWNLOAD_DIR = os.path.abspath(os.path.join(os.getcwd(), "reportes_juicios"))
+        os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+        print(f"Carpeta de descargas creada: {DOWNLOAD_DIR}")
+
         prefs = {
             "download.default_directory": DOWNLOAD_DIR,
             "download.prompt_for_download": False,
