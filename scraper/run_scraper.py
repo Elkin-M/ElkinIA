@@ -1606,9 +1606,23 @@ def ejecutar_scraper(filtros_entrada=None):
         jornada_busqueda = filtros_entrada.get('jornada')
 
         #formato de fecha
-        fecha_obj = datetime.strftime(filtros_entrada.get('fecha'), '%Y-%m-%d')
-        fecha_inicio_busqueda = fecha_obj.strftime('%d/%m/%Y')
-        fecha_final_busqueda = None #arreglamos despues
+        
+        # 💡 CORRECCIÓN CRÍTICA: Convertir el string de fecha a un objeto datetime
+        fecha_inicio_busqueda = None
+        fecha_final_busqueda = None
+        fecha_str = filtros_entrada.get('fecha')
+        if fecha_str:
+            try:
+                # Usa strptime() para PARSEAR (convertir de string a datetime)
+                fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+                
+                # Usa strftime() para FORMATEAR el objeto datetime a un string de formato
+                # que el navegador web pueda entender (DD/MM/YYYY)
+                fecha_inicio_busqueda = fecha_obj.strftime('%d/%m/%Y')
+                fecha_final_busqueda = (fecha_obj + timedelta(days=1)).strftime('%d/%m/%Y') 
+                
+            except ValueError as e:
+                raise Exception(f"Formato de fecha inválido '{fecha_str}': {e}")
 
 
         filtros_actuales = {

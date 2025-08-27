@@ -9,50 +9,24 @@ injectStyles();
 // ==============================
 // Componente HomeForm
 // ==============================
-function HomeForm() {
+function HomeForm({ onSubmit, loading, statusMessage, progress }) {
     const [action, setAction] = useState("mapear");
     const [filters, setFilters] = useState({
-        regional: "BOLÍVAR",
-        centro: "CARTAGENA",
-        jornada: "DIURNA",
-        fecha: new Date().toISOString().slice(0, 10),
+        regional: "",
+        centro: "",
+        jornada: "",
+        codigo_ficha: "",
+        fecha_inicio: new Date().toISOString().slice(0, 10),
+        fecha_fin: new Date().toISOString().slice(0, 10),
     });
-    const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState(null);
-    const [error, setError] = useState(null);
-    const [focusedInput, setFocusedInput] = useState(null);
 
     const handleChange = (e) => {
         setFilters({ ...filters, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = async () => {
-        setLoading(true);
-        setResult(null);
-        setError(null);
-
-        const payload = {
-            action: action,
-            filters: filters,
-        };
-        
-        // 📌 CORRECCIÓN: Usar el nuevo endpoint unificado
-        const backendUrl = "http://localhost:8000/api/ejecutar_proceso";
-        
-        try {
-            const response = await axios.post(backendUrl, payload, {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            setResult(response.data);
-            console.log("Respuesta del backend:", response.data);
-        } catch (err) {
-            setError(err.response ? err.response.data.detail : "Error de red o del servidor.");
-            console.error("Error al enviar la solicitud:", err);
-        } finally {
-            setLoading(false);
-        }
+    const handleFormSubmit = (e) => {
+        e.preventDefault();
+        onSubmit(action, filters);
     };
 
     const ActionCard = ({ value, icon: Icon, title, description, isSelected }) => (
@@ -100,7 +74,7 @@ function HomeForm() {
                 <p style={styles.cardSubtitle}>Selecciona una acción y configura los filtros</p>
             </div>
 
-            <div style={styles.formContainer}>
+            <form onSubmit={handleFormSubmit} style={styles.formContainer}>
                 <div>
                     <h3 style={styles.sectionTitle}>
                         <Users size={20} />
@@ -137,94 +111,123 @@ function HomeForm() {
                         <Filter size={20} />
                         Filtros de Búsqueda
                     </h3>
-
+                    
                     <div style={styles.filtersGrid}>
-                        <div style={styles.inputGroup}>
-                            <label style={styles.label}>
-                                <Building size={16} />
-                                Regional
-                            </label>
-                            <input
-                                type="text"
-                                name="regional"
-                                placeholder="Ej: BOLÍVAR"
-                                value={filters.regional}
-                                onChange={handleChange}
-                                onFocus={() => setFocusedInput('regional')}
-                                onBlur={() => setFocusedInput(null)}
-                                style={{
-                                    ...styles.input,
-                                    ...(focusedInput === 'regional' ? styles.inputFocus : {}),
-                                }}
-                            />
+                        {/* Campo de Código de Ficha */}
+                        <div style={styles.filterGroup}>
+                            <label htmlFor="codigo_ficha">Código de Ficha:</label>
+                            <div style={styles.inputContainer}>
+                                <Search size={20} color="#6B7280" />
+                                <input
+                                    type="text"
+                                    id="codigo_ficha"
+                                    name="codigo_ficha"
+                                    value={filters.codigo_ficha}
+                                    onChange={handleChange}
+                                    style={styles.input}
+                                    placeholder="Ej: 2484924"
+                                />
+                            </div>
                         </div>
 
-                        <div style={styles.inputGroup}>
-                            <label style={styles.label}>
-                                <MapPin size={16} />
-                                Centro
-                            </label>
-                            <input
-                                type="text"
-                                name="centro"
-                                placeholder="Ej: CARTAGENA"
-                                value={filters.centro}
-                                onChange={handleChange}
-                                onFocus={() => setFocusedInput('centro')}
-                                onBlur={() => setFocusedInput(null)}
-                                style={{
-                                    ...styles.input,
-                                    ...(focusedInput === 'centro' ? styles.inputFocus : {}),
-                                }}
-                            />
+                        {/* Campo de Regional (select) */}
+                        <div style={styles.filterGroup}>
+                            <label htmlFor="regional">Regional:</label>
+                            <div style={styles.inputContainer}>
+                                <Building size={20} color="#6B7280" />
+                                <select
+                                    id="regional"
+                                    name="regional"
+                                    value={filters.regional}
+                                    onChange={handleChange}
+                                    style={styles.input}
+                                >
+                                    <option value="">-- No seleccionar --</option>
+                                    <option value="BOLÍVAR">BOLÍVAR</option>
+                                    {/* Agrega más opciones de regional aquí */}
+                                </select>
+                            </div>
                         </div>
 
-                        <div style={styles.inputGroup}>
-                            <label style={styles.label}>
-                                <Users size={16} />
-                                Jornada
-                            </label>
-                            <select
-                                name="jornada"
-                                value={filters.jornada}
-                                onChange={handleChange}
-                                onFocus={() => setFocusedInput('jornada')}
-                                onBlur={() => setFocusedInput(null)}
-                                style={{
-                                    ...styles.input,
-                                    ...(focusedInput === 'jornada' ? styles.inputFocus : {}),
-                                }}
-                            >
-                                <option value="DIURNA">Diurna</option>
-                                <option value="NOCTURNA">Nocturna</option>
-                                <option value="MIXTA">Mixta</option>
-                            </select>
+                        {/* Campo de Centro (select) */}
+                        <div style={styles.filterGroup}>
+                            <label htmlFor="centro">Centro:</label>
+                            <div style={styles.inputContainer}>
+                                <MapPin size={20} color="#6B7280" />
+                                <select
+                                    id="centro"
+                                    name="centro"
+                                    value={filters.centro}
+                                    onChange={handleChange}
+                                    style={styles.input}
+                                >
+                                    <option value="">-- No seleccionar --</option>
+                                    <option value="CARTAGENA">CARTAGENA</option>
+                                    <option value="CENTRO DE COMERCIO Y SERVICIOS">CENTRO DE COMERCIO Y SERVICIOS</option>
+                                    {/* Agrega más opciones de centro aquí */}
+                                </select>
+                            </div>
                         </div>
 
-                        <div style={styles.inputGroup}>
-                            <label style={styles.label}>
-                                <Calendar size={16} />
-                                Fecha
-                            </label>
-                            <input
-                                type="date"
-                                name="fecha"
-                                value={filters.fecha}
-                                onChange={handleChange}
-                                onFocus={() => setFocusedInput('fecha')}
-                                onBlur={() => setFocusedInput(null)}
-                                style={{
-                                    ...styles.input,
-                                    ...(focusedInput === 'fecha' ? styles.inputFocus : {}),
-                                }}
-                            />
+                        {/* Campo de Jornada (select) */}
+                        <div style={styles.filterGroup}>
+                            <label htmlFor="jornada">Jornada:</label>
+                            <div style={styles.inputContainer}>
+                                <Play size={20} color="#6B7280" />
+                                <select
+                                    id="jornada"
+                                    name="jornada"
+                                    value={filters.jornada}
+                                    onChange={handleChange}
+                                    style={styles.input}
+                                >
+                                    <option value="">-- No seleccionar --</option>
+                                    <option value="DIURNA">DIURNA</option>
+                                    <option value="NOCTURNA">NOCTURNA</option>
+                                    <option value="MIXTA">MIXTA</option>
+                                    <option value="VIRTUAL">VIRTUAL</option>
+                                </select>
+                            </div>
                         </div>
+                        
+                        {/* Campo de Fecha Inicial */}
+                        <div style={styles.filterGroup}>
+                            <label htmlFor="fecha_inicio">Fecha inicial:</label>
+                            <div style={styles.inputContainer}>
+                                <Calendar size={20} color="#6B7280" />
+                                <input
+                                    type="date"
+                                    id="fecha_inicio"
+                                    name="fecha_inicio"
+                                    value={filters.fecha_inicio}
+                                    onChange={handleChange}
+                                    style={styles.input}
+                                />
+                            </div>
+                        </div>
+                        
+                        {/* Campo de Fecha Final */}
+                        <div style={styles.filterGroup}>
+                            <label htmlFor="fecha_fin">Fecha final:</label>
+                            <div style={styles.inputContainer}>
+                                <Calendar size={20} color="#6B7280" />
+                                <input
+                                    type="date"
+                                    id="fecha_fin"
+                                    name="fecha_fin"
+                                    value={filters.fecha_fin}
+                                    onChange={handleChange}
+                                    style={styles.input}
+                                />
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
                 <div style={{ textAlign: 'center' }}>
                     <button
-                        onClick={handleSubmit}
+                        type="submit"
                         disabled={loading}
                         style={{
                             ...styles.primaryButton,
@@ -246,17 +249,17 @@ function HomeForm() {
                         Iniciando el proceso...
                     </div>
                 )}
-                {result && (
-                    <div style={{ ...styles.statusMessage, color: 'green' }}>
-                        ✅ {result.message}
+                {statusMessage && (
+                    <div style={{ ...styles.statusMessage, color: statusMessage.includes('✅') ? 'green' : 'red' }}>
+                        {statusMessage}
                     </div>
                 )}
-                {error && (
-                    <div style={{ ...styles.statusMessage, color: 'red' }}>
-                        ❌ Error: {error}
+                {progress && (
+                    <div style={styles.statusMessage}>
+                        Progreso: {progress.stage} ({progress.current}%)
                     </div>
                 )}
-            </div>
+            </form>
         </div>
     );
 }
