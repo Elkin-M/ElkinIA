@@ -1478,7 +1478,7 @@ def esperar_nuevo_archivo(dir_path: str, existentes: set, timeout=60):
 # --- Inicio de la automatización ---
 
 
-def ejecutar_scraper():
+def ejecutar_scraper(filtros_entrada=None):
     """
     Función principal que ejecuta todo el proceso de scraping
     El WebDriver se inicializa SOLO cuando se llama esta función
@@ -1598,15 +1598,18 @@ def ejecutar_scraper():
             raise Exception(f"💥 Fallo crítico: No se pudo cambiar al iframe del modal '{IFRAME_MODAL_ID}'.")
 
         # 5. Aplicar filtros
-        print("\n🔧 Aplicando filtros de búsqueda...")
-        current_date = datetime.now()
-        fecha_inicio_busqueda = "09/08/2025"
+        print("\n🔧 Aplicando filtros de búsqueda del frontend...")
+        #usa los filtros recibidos, si no hay , usa valores por defecto
+        codigo_ficha_busqueda = filtros_entrada.get('codigo_ficha')
+        dep_busqueda = filtros_entrada.get('regional')
+        mun_busqueda = filtros_entrada.get('centro')
+        jornada_busqueda = filtros_entrada.get('jornada')
 
-        dep_busqueda = "BOLÍVAR"
-        mun_busqueda = None
-        jornada_busqueda = None
-        codigo_ficha_busqueda = None
-        fecha_final_busqueda = None
+        #formato de fecha
+        fecha_obj = datetime.strftime(filtros_entrada.get('fecha'), '%Y-%m-%d')
+        fecha_inicio_busqueda = fecha_obj.strftime('%d/%m/%Y')
+        fecha_final_busqueda = None #arreglamos despues
+
 
         filtros_actuales = {
             'codigo_ficha': codigo_ficha_busqueda,

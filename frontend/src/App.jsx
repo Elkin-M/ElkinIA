@@ -10,7 +10,9 @@ import Footer from "./components/footer.jsx";
 import HeroBanner from "./components/HeroBanner.jsx";
 import JuiciosPage from "./components/JuiciosPage.jsx"; // Importa el nuevo componente
 import Navbar from "./components/navbar.jsx";
-const API_URL = import.meta.env.VITE_API_URL;
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function AppContent() {
   const [loading, setLoading] = useState(false);
@@ -19,6 +21,8 @@ function AppContent() {
   const [statusMessage, setStatusMessage] = useState("");
   const [progress, setProgress] = useState(null);
 
+  const [loadingJuicios, setLoadingJuicios] = useState(false);
+  const [juiciosData, setJuiciosData] = useState([]);
 
   // Datos simulados para el ejemplo
   const mockData = [
@@ -51,7 +55,7 @@ function AppContent() {
     }
   ];
 
-  // Simular carga de datos
+  // Simular carga de datos inicial
   useEffect(() => {
     setLoading(true);
     setTimeout(() => {
@@ -60,148 +64,48 @@ function AppContent() {
     }, 1000);
   }, []);
 
+  // Función unificada para manejar todas las acciones del scraper
+  const handleSubmit = async (action, filters) => {
+    setLoading(true);
+    setProgress({ current: 0, total: 100, stage: "Iniciando..." });
 
+    try {
+        let message = "Iniciando proceso...";
+        if (action === "mapear") message = "🗺️ Iniciando mapeo de fichas...";
+        else if (action === "descargar") message = "⬇️ Iniciando descarga de juicios...";
+        else if (action === "completo") message = "🎯 Ejecutando proceso completo...";
+        setStatusMessage(message);
 
+        setProgress({ current: 10, total: 100, stage: "Enviando solicitud al backend..." });
 
+        const payload = { action, filters };
+        const res = await axios.post(`${API_URL}/api/ejecutar_proceso`, payload, {
+          headers: {
+            "ngrok-skip-browser-warning": "true"
+          }
+        });
 
-// --------------Logica de peticion api ---------------------------
-const handleSubmit = async (action, filters) => {
-  setLoading(true);
-  setProgress({ current: 0, total: 100, stage: "Iniciando..." });
-  
-  try {
-    let res;
-    let json;
-    
-    if (action === "mapear") {
-      setStatusMessage("🗺️ Iniciando mapeo de fichas...");
-      setProgress({ current: 10, total: 100, stage: "Conectando a SENA Sofia Plus..." });
-      
-      res = await fetch(`${API_URL}/mapear-fichas`, {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true"
-        },
-        body: JSON.stringify(filters)
-      });
-      
-      json = await res.json();
-      
-      if (res.ok) {
-        setProgress({ current: 100, total: 100, stage: "Mapeo completado" });
-        setStatusMessage(`✅ Mapeo terminado: ${json.fichas_encontradas || 0} fichas encontradas`);
-        console.log("Mapeo terminado:", json);
-      } else {
-        throw new Error(json.error || "Error en el mapeo");
-      }
-      
-    } else if (action === "descargar") {
-      setStatusMessage("⬇️ Iniciando descarga de juicios...");
-      setProgress({ current: 20, total: 100, stage: "Procesando descargas pendientes..." });
-      
-      res = await fetch(`${API_URL}/descargar-juicios`, {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true"
-        },
-        body: JSON.stringify(filters)
-      });
-      
-      json = await res.json();
-      
-      if (res.ok) {
-        setProgress({ current: 100, total: 100, stage: "Descargas completadas" });
-        setStatusMessage(`✅ Descarga terminada: ${json.descargas_exitosas || 0} exitosas, ${json.descargas_fallidas || 0} fallidas`);
-        console.log("Descarga terminada:", json);
-      } else {
-        throw new Error(json.error || "Error en la descarga");
-      }
-      
-    } else if (action === "completo") {
-      setStatusMessage("🎯 Ejecutando proceso completo...");
-      setProgress({ current: 5, total: 100, stage: "Iniciando proceso completo..." });
-      
-      res = await fetch(`${API_URL}/proceso-completo`, {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true"
-        },
-        body: JSON.stringify(filters)
-      });
-      
-      json = await res.json();
-      
-      if (res.ok) {
-        setProgress({ current: 100, total: 100, stage: "Proceso completo finalizado" });
-        setStatusMessage(`🎉 Proceso completo terminado: ${json.fichas_mapeadas || 0} fichas mapeadas, ${json.descargas_exitosas || 0} descargas exitosas`);
-        console.log("Proceso completo terminado:", json);
-      } else {
-        throw new Error(json.error || "Error en el proceso completo");
-      }
+        if (res.status === 200) {
+            setProgress({ current: 100, total: 100, stage: "Proceso completado" });
+            setStatusMessage(`✅ Proceso ${action} terminado: ${res.data.message}`);
+            console.log("Proceso terminado:", res.data);
+        } else {
+            throw new Error(res.data.detail || "Error en el proceso.");
+        }
+    } catch (err) {
+        setStatusMessage(`❌ Error: ${err.message || "Error desconocido"}`);
+        console.error("Error al enviar la solicitud:", err);
+        setProgress(null);
+    } finally {
+        setLoading(false);
+        // Limpiar progreso después de 5 segundos
+        setTimeout(() => {
+            setProgress(null);
+        }, 5000);
     }
-    
-    // Refresca la vista de fichas después de cualquier acción
-    await fetchFichas();
-    
-  } catch (err) {
-    console.error("Error al ejecutar acción:", err);
-    setStatusMessage(`❌ Error: ${err.message}`);
-    setProgress(null);
-  } finally {
-    setLoading(false);
-    // Limpiar progreso después de 5 segundos
-    setTimeout(() => {
-      setProgress(null);
-    }, 5000);
-  }
-};
-
-
-//------------------------------------------------------------------------
-
-
-
-  const handleDownloadSingle = async (numeroFicha) => {
-    setLoading(true);
-    setStatusMessage(`⬇️ Descargando ficha ${numeroFicha}...`);
-    
-    // Simular descarga
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setResults(prev => prev.map(ficha => 
-      ficha.numero_ficha === numeroFicha 
-        ? { ...ficha, estado_descarga: 'descargado' }
-        : ficha
-    ));
-    
-    setStatusMessage(`✅ Ficha ${numeroFicha} descargada`);
-    setLoading(false);
-    
-    setTimeout(() => setStatusMessage(""), 2000);
   };
 
-  const handleBulkDownload = async (fichasSeleccionadas) => {
-    setLoading(true);
-    setStatusMessage(`⬇️ Descargando ${fichasSeleccionadas.length} fichas...`);
-    
-    // Simular descarga bulk
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    setResults(prev => prev.map(ficha => 
-      fichasSeleccionadas.includes(ficha.numero_ficha)
-        ? { ...ficha, estado_descarga: 'descargado' }
-        : ficha
-    ));
-    
-    setStatusMessage(`✅ ${fichasSeleccionadas.length} fichas descargadas`);
-    setLoading(false);
-    
-    setTimeout(() => setStatusMessage(""), 2000);
-  };
-
+  // Lógica de filtrado
   const filtered = results.filter((f) => {
     const q = query.toLowerCase();
     return (
@@ -310,8 +214,9 @@ const handleSubmit = async (action, filters) => {
 
         <ResultsTable 
           data={filtered} 
-          onDownloadSingle={handleDownloadSingle}
-          onBulkDownload={handleBulkDownload}
+          // Estas funciones de descarga no existen en este App.jsx, se deben manejar en JuiciosPage
+          // onDownloadSingle={handleDownloadSingle}
+          // onBulkDownload={handleBulkDownload}
           loading={loading}
         />
       </div>

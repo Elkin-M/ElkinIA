@@ -4,11 +4,10 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000", // ajusta si tu backend está en otro puerto
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
 });
 
-export const mapearFichas = (payload) => api.post("/mapear-fichas", payload);
-export const descargarJuicios = (payload) => api.post("/descargar-juicios", payload);
-export const listarFichas = () => api.get("/fichas");
+export const ejecutarProceso = (payload) => api.post("/api/ejecutar_proceso", payload);
+export const listarFichas = () => api.get("/api/fichas");
 
 export default api;
