@@ -10,53 +10,40 @@ injectStyles();
 // Componente HomeForm
 // ==============================
 
-// Datos reales de departamentos y centros SENA para los selects
-const REGIONAL_CENTROS = {
+// Datos de departamentos y sus municipios para los selects
+const DEPARTAMENTO_MUNICIPIOS = {
     "": ["-- No seleccionar --"],
-    "AMAZONAS": ["CENTRO PARA LA BIODIVERSIDAD Y EL TURISMO DEL AMAZONAS"],
-    "ANTIOQUIA": [
-        "CENTRO DE COMERCIO", "CENTRO DE SERVICIOS DE SALUD", "CENTRO PARA EL DESARROLLO DEL HÁBITAT Y LA CONSTRUCCIÓN",
-        "CENTRO DE TECNOLOGÍA DE LA MANUFACTURA AVANZADA", "CENTRO DE LA INNOVACIÓN, LA AGROINDUSTRIA Y EL TURISMO",
-        "CENTRO DE FORMACIÓN EN ACTIVIDAD FÍSICA Y CULTURA", "CENTRO DE SERVICIOS Y GESTIÓN EMPRESARIAL",
-        "CENTRO DE DESARROLLO AGROECOLÓGICO Y AGROINDUSTRIAL", "CENTRO AGROECOLÓGICO Y EMPRESARIAL",
-        "CENTRO DE LA TECNOLOGÍA DEL DISEÑO Y LA PRODUCTIVIDAD EMPRESARIAL"
-    ],
-    "ARAUCA": ["CENTRO DE GESTIÓN Y DESARROLLO AGROINDUSTRIAL DE ARUA"],
-    "ATLÁNTICO": ["CENTRO NACIONAL COLOMBO ALEMÁN", "CENTRO INDUSTRIAL Y DE AVIACIÓN", "CENTRO DE COMERCIO Y SERVICIOS"],
-    "BOLÍVAR": [
-        "CENTRO AGROEMPRESARIAL Y MINERO", "CENTRO INTERNACIONAL DE NÁUTICA, FLUVIAL Y PORTUARIA",
-        "CENTRO DE COMERCIO Y SERVICIOS", "CENTRO PARA EL DESARROLLO AGROECOLÓGICO Y AGROINDUSTRIAL",
-        "CENTRO DE TECNOLOGÍA AGROINDUSTRIAL"
-    ],
-    "BOYACÁ": [
-        "CENTRO AGROPECUARIO Y DE TECNOLOGÍA AGROINDUSTRIAL", "CENTRO DE GESTIÓN ADMINISTRATIVA Y FINANCIERA",
-        "CENTRO MINERO", "CENTRO DE GESTIÓN Y DESARROLLO MINERO", "CENTRO DE DESARROLLO AGROPECUARIO Y AGROINDUSTRIAL"
-    ],
-    "CALDAS": ["CENTRO DE PROCESOS INDUSTRIALES Y CONSTRUCCIÓN", "CENTRO PÉRDIDA DE SUELO", "CENTRO PARA LA FORMACIÓN CAFETERA"],
-    "CAQUETÁ": ["CENTRO AGROINDUSTRIAL DEL META", "CENTRO PARA EL DESARROLLO DE LA AMAZONÍA"],
-    "CASANARE": ["CENTRO AGROINDUSTRIAL Y PECUARIO DEL META"],
-    "CAUCA": ["CENTRO PARA EL DESARROLLO AGROINDUSTRIAL Y DE LA CONSTRUCCIÓN", "CENTRO DE TELEINFORMÁTICA Y PRODUCCIÓN INDUSTRIAL"],
-    "CESAR": ["CENTRO AGROECOLÓGICO Y EMPRESARIAL"],
-    "CHOCÓ": ["CENTRO PARA EL DESARROLLO DEL HÁBITAT Y LA CONSTRUCCIÓN"],
-    "CUNDINAMARCA": ["CENTRO DE DESARROLLO AGROECOLÓGICO Y AGROINDUSTRIAL", "CENTRO DE FORMACIÓN EN ACTIVIDAD FÍSICA Y CULTURA"],
-    "CÓRDOBA": ["CENTRO DE GESTIÓN Y DESARROLLO AGROINDUSTRIAL DE CÓRDOBA"],
-    "GUAVIARE": ["CENTRO AGROECOLÓGICO Y EMPRESARIAL"],
-    "HUILA": ["CENTRO AGROINDUSTRIAL DEL HUILA"],
-    "LA GUAJIRA": ["CENTRO DE GESTIÓN Y DESARROLLO AGROINDUSTRIAL Y PESQUERO DE LA GUAJIRA"],
-    "MAGDALENA": ["CENTRO DE FORMACIÓN Y DESARROLLO DEL TURISMO", "CENTRO ACUÍCOLA Y AGROINDUSTRIAL DE LA GUAJIRA"],
-    "META": ["CENTRO AGROINDUSTRIAL DEL META"],
-    "NARIÑO": ["CENTRO AGROECOLÓGICO Y AGROINDUSTRIAL DEL NARIÑO"],
-    "NORTE DE SANTANDER": ["CENTRO DE LA TECNOLOGÍA DEL DISEÑO Y LA PRODUCTIVIDAD EMPRESARIAL"],
-    "PUTUMAYO": ["CENTRO DE DESARROLLO TECNOLÓGICO Y AGROINDUSTRIAL DEL PUTUMAYO"],
-    "QUINDÍO": ["CENTRO PARA LA FORMACIÓN TURÍSTICA Y AGROECOLÓGICA DEL QUINDÍO"],
-    "RISARALDA": ["CENTRO PARA LA INNOVACIÓN DE LA AGROINDUSTRIA Y EL TURISMO"],
-    "SAN ANDRÉS": ["CENTRO DE FORMACIÓN TURÍSTICA Y HOTELERA"],
-    "SANTANDER": ["CENTRO DE LA TECNOLOGÍA DEL HÁBITAT"],
-    "SUCRE": ["CENTRO DE LA INNOVACIÓN Y LA AGROINDUSTRIA"],
-    "TOLIMA": ["CENTRO DE LA GESTIÓN AGROECOLÓGICA"],
-    "VALLE DEL CAUCA": ["CENTRO DE BIOTECNOLOGÍA INDUSTRIAL", "CENTRO DE LA CONSTRUCCIÓN"],
-    "VAUPÉS": ["CENTRO DE TECNOLOGÍA AGROINDUSTRIAL DEL VAUPÉS"],
-    "VICHADA": ["CENTRO AGROINDUSTRIAL Y EMPRESARIAL DEL VICHADA"]
+    "AMAZONAS": ["LETICIA"],
+    "ANTIOQUIA": ["MEDELLÍN", "BELLO", "ENVIGADO", "ITAGÜÍ", "SABANETA", "APARTADÓ"],
+    "ARAUCA": ["ARAUCA"],
+    "ATLÁNTICO": ["BARRANQUILLA", "SOLEDAD", "MALAMBO", "SABANALARGA"],
+    "BOLÍVAR": ["CARTAGENA", "TURBACO", "MAGANGUÉ", "MOMPÓS"],
+    "BOYACÁ": ["TUNJA", "DUITAMA", "SOGAMOSO", "CHIQUINQUIRÁ"],
+    "CALDAS": ["MANIZALES", "CHINCHINÁ", "LA DORADA"],
+    "CAQUETÁ": ["FLORENCIA"],
+    "CASANARE": ["YOPAL"],
+    "CAUCA": ["POPAYÁN", "SANTANDER DE QUILICHAO", "PUERTO TEJADA"],
+    "CESAR": ["VALLEDUPAR", "AGUACHICA"],
+    "CHOCÓ": ["QUIBDÓ"],
+    "CUNDINAMARCA": ["BOGOTÁ D.C.", "SOACHA", "ZIPAQUIRÁ", "CHÍA", "FUSAGASUGÁ"],
+    "CÓRDOBA": ["MONTERÍA", "SAHAGÚN"],
+    "GUAVIARE": ["SAN JOSÉ DEL GUAVIARE"],
+    "HUILA": ["NEIVA", "GARZÓN"],
+    "LA GUAJIRA": ["RIOHACHA", "MAICAO"],
+    "MAGDALENA": ["SANTA MARTA", "CIÉNAGA"],
+    "META": ["VILLAVICENCIO", "PUERTO LÓPEZ"],
+    "NARIÑO": ["PASTO", "IPIALES"],
+    "NORTE DE SANTANDER": ["CÚCUTA", "OCAÑA"],
+    "PUTUMAYO": ["MOCOA", "PUERTO ASÍS"],
+    "QUINDÍO": ["ARMENIA", "CALARCÁ", "CIRCASIA"],
+    "RISARALDA": ["PEREIRA", "DOSQUEBRADAS"],
+    "SAN ANDRÉS": ["SAN ANDRÉS"],
+    "SANTANDER": ["BUCARAMANGA", "FLORIDABLANCA", "GIRÓN", "PIEDECUESTA"],
+    "SUCRE": ["SINCELEJO", "COROZAL"],
+    "TOLIMA": ["IBAGUÉ", "ESPINAL", "CHAPARRAL"],
+    "VALLE DEL CAUCA": ["CALI", "BUENAVENTURA", "PALMIRA", "TULUÁ"],
+    "VAUPÉS": ["MITÚ"],
+    "VICHADA": ["PUERTO CARREÑO"]
 };
 
 const JORNADA_OPCIONES = [
@@ -66,27 +53,26 @@ const JORNADA_OPCIONES = [
 function HomeForm({ onSubmit, loading, statusMessage, progress }) {
     const [action, setAction] = useState("mapear");
     const [filters, setFilters] = useState({
-        regional: "",
-        centro: "",
+        departamento: "",
+        municipio: "",
         jornada: "",
         codigo_ficha: "",
-        fecha_inicio: "",
-        fecha_fin: "",
+        fecha_inicio: "", // Ahora inicia vacío
+        fecha_fin: "",    // Ahora inicia vacío
     });
 
-    // Estado para gestionar los centros de formación
-    const [centrosDisponibles, setCentrosDisponibles] = useState([]);
+    const [municipiosDisponibles, setMunicipiosDisponibles] = useState([]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFilters(prevFilters => ({ ...prevFilters, [name]: value }));
 
-        // Lógica para actualizar los centros cuando cambia la regional
-        if (name === "regional") {
-            const nuevosCentros = REGIONAL_CENTROS[value] || [];
-            setCentrosDisponibles(nuevosCentros);
-            // Resetear el centro si la regional cambia
-            setFilters(prevFilters => ({ ...prevFilters, centro: "" }));
+        // Lógica para actualizar los municipios cuando cambia el departamento
+        if (name === "departamento") {
+            const nuevosMunicipios = DEPARTAMENTO_MUNICIPIOS[value] || [];
+            setMunicipiosDisponibles(nuevosMunicipios);
+            // Resetear el municipio si el departamento cambia
+            setFilters(prevFilters => ({ ...prevFilters, municipio: "" }));
         }
     };
 
@@ -178,7 +164,7 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
                         Filtros de Búsqueda
                     </h3>
                     
-                    {/* 💡 Nuevo layout de 2 filas de 3 columnas */}
+                    {/* Nuevo layout de 2 filas de 3 columnas */}
                     <div style={styles.filtersGrid}>
                         {/* Fila 1 */}
                         <div style={styles.filterGroup}>
@@ -198,39 +184,39 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
                         </div>
 
                         <div style={styles.filterGroup}>
-                            <label htmlFor="regional">Regional:</label>
+                            <label htmlFor="departamento">Departamento:</label>
                             <div style={styles.inputContainer}>
                                 <Building size={20} color="#6B7280" />
                                 <select
-                                    id="regional"
-                                    name="regional"
-                                    value={filters.regional}
+                                    id="departamento"
+                                    name="departamento"
+                                    value={filters.departamento}
                                     onChange={handleChange}
                                     style={styles.input}
                                 >
                                     <option value="">-- No seleccionar --</option>
-                                    {Object.keys(REGIONAL_CENTROS).sort().map(regional => (
-                                        regional && <option key={regional} value={regional}>{regional}</option>
+                                    {Object.keys(DEPARTAMENTO_MUNICIPIOS).sort().map(depto => (
+                                        depto && <option key={depto} value={depto}>{depto}</option>
                                     ))}
                                 </select>
                             </div>
                         </div>
 
                         <div style={styles.filterGroup}>
-                            <label htmlFor="centro">Centro:</label>
+                            <label htmlFor="municipio">Municipio:</label>
                             <div style={styles.inputContainer}>
                                 <MapPin size={20} color="#6B7280" />
                                 <select
-                                    id="centro"
-                                    name="centro"
-                                    value={filters.centro}
+                                    id="municipio"
+                                    name="municipio"
+                                    value={filters.municipio}
                                     onChange={handleChange}
                                     style={styles.input}
-                                    disabled={!filters.regional}
+                                    disabled={!filters.departamento}
                                 >
                                     <option value="">-- No seleccionar --</option>
-                                    {centrosDisponibles.map(centro => (
-                                        <option key={centro} value={centro}>{centro}</option>
+                                    {municipiosDisponibles.map(municipio => (
+                                        <option key={municipio} value={municipio}>{municipio}</option>
                                     ))}
                                 </select>
                             </div>
