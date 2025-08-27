@@ -9,6 +9,60 @@ injectStyles();
 // ==============================
 // Componente HomeForm
 // ==============================
+
+// Datos reales de departamentos y centros SENA para los selects
+const REGIONAL_CENTROS = {
+    "": ["-- No seleccionar --"],
+    "AMAZONAS": ["CENTRO PARA LA BIODIVERSIDAD Y EL TURISMO DEL AMAZONAS"],
+    "ANTIOQUIA": [
+        "CENTRO DE COMERCIO", "CENTRO DE SERVICIOS DE SALUD", "CENTRO PARA EL DESARROLLO DEL HÁBITAT Y LA CONSTRUCCIÓN",
+        "CENTRO DE TECNOLOGÍA DE LA MANUFACTURA AVANZADA", "CENTRO DE LA INNOVACIÓN, LA AGROINDUSTRIA Y EL TURISMO",
+        "CENTRO DE FORMACIÓN EN ACTIVIDAD FÍSICA Y CULTURA", "CENTRO DE SERVICIOS Y GESTIÓN EMPRESARIAL",
+        "CENTRO DE DESARROLLO AGROECOLÓGICO Y AGROINDUSTRIAL", "CENTRO AGROECOLÓGICO Y EMPRESARIAL",
+        "CENTRO DE LA TECNOLOGÍA DEL DISEÑO Y LA PRODUCTIVIDAD EMPRESARIAL"
+    ],
+    "ARAUCA": ["CENTRO DE GESTIÓN Y DESARROLLO AGROINDUSTRIAL DE ARUA"],
+    "ATLÁNTICO": ["CENTRO NACIONAL COLOMBO ALEMÁN", "CENTRO INDUSTRIAL Y DE AVIACIÓN", "CENTRO DE COMERCIO Y SERVICIOS"],
+    "BOLÍVAR": [
+        "CENTRO AGROEMPRESARIAL Y MINERO", "CENTRO INTERNACIONAL DE NÁUTICA, FLUVIAL Y PORTUARIA",
+        "CENTRO DE COMERCIO Y SERVICIOS", "CENTRO PARA EL DESARROLLO AGROECOLÓGICO Y AGROINDUSTRIAL",
+        "CENTRO DE TECNOLOGÍA AGROINDUSTRIAL"
+    ],
+    "BOYACÁ": [
+        "CENTRO AGROPECUARIO Y DE TECNOLOGÍA AGROINDUSTRIAL", "CENTRO DE GESTIÓN ADMINISTRATIVA Y FINANCIERA",
+        "CENTRO MINERO", "CENTRO DE GESTIÓN Y DESARROLLO MINERO", "CENTRO DE DESARROLLO AGROPECUARIO Y AGROINDUSTRIAL"
+    ],
+    "CALDAS": ["CENTRO DE PROCESOS INDUSTRIALES Y CONSTRUCCIÓN", "CENTRO PÉRDIDA DE SUELO", "CENTRO PARA LA FORMACIÓN CAFETERA"],
+    "CAQUETÁ": ["CENTRO AGROINDUSTRIAL DEL META", "CENTRO PARA EL DESARROLLO DE LA AMAZONÍA"],
+    "CASANARE": ["CENTRO AGROINDUSTRIAL Y PECUARIO DEL META"],
+    "CAUCA": ["CENTRO PARA EL DESARROLLO AGROINDUSTRIAL Y DE LA CONSTRUCCIÓN", "CENTRO DE TELEINFORMÁTICA Y PRODUCCIÓN INDUSTRIAL"],
+    "CESAR": ["CENTRO AGROECOLÓGICO Y EMPRESARIAL"],
+    "CHOCÓ": ["CENTRO PARA EL DESARROLLO DEL HÁBITAT Y LA CONSTRUCCIÓN"],
+    "CUNDINAMARCA": ["CENTRO DE DESARROLLO AGROECOLÓGICO Y AGROINDUSTRIAL", "CENTRO DE FORMACIÓN EN ACTIVIDAD FÍSICA Y CULTURA"],
+    "CÓRDOBA": ["CENTRO DE GESTIÓN Y DESARROLLO AGROINDUSTRIAL DE CÓRDOBA"],
+    "GUAVIARE": ["CENTRO AGROECOLÓGICO Y EMPRESARIAL"],
+    "HUILA": ["CENTRO AGROINDUSTRIAL DEL HUILA"],
+    "LA GUAJIRA": ["CENTRO DE GESTIÓN Y DESARROLLO AGROINDUSTRIAL Y PESQUERO DE LA GUAJIRA"],
+    "MAGDALENA": ["CENTRO DE FORMACIÓN Y DESARROLLO DEL TURISMO", "CENTRO ACUÍCOLA Y AGROINDUSTRIAL DE LA GUAJIRA"],
+    "META": ["CENTRO AGROINDUSTRIAL DEL META"],
+    "NARIÑO": ["CENTRO AGROECOLÓGICO Y AGROINDUSTRIAL DEL NARIÑO"],
+    "NORTE DE SANTANDER": ["CENTRO DE LA TECNOLOGÍA DEL DISEÑO Y LA PRODUCTIVIDAD EMPRESARIAL"],
+    "PUTUMAYO": ["CENTRO DE DESARROLLO TECNOLÓGICO Y AGROINDUSTRIAL DEL PUTUMAYO"],
+    "QUINDÍO": ["CENTRO PARA LA FORMACIÓN TURÍSTICA Y AGROECOLÓGICA DEL QUINDÍO"],
+    "RISARALDA": ["CENTRO PARA LA INNOVACIÓN DE LA AGROINDUSTRIA Y EL TURISMO"],
+    "SAN ANDRÉS": ["CENTRO DE FORMACIÓN TURÍSTICA Y HOTELERA"],
+    "SANTANDER": ["CENTRO DE LA TECNOLOGÍA DEL HÁBITAT"],
+    "SUCRE": ["CENTRO DE LA INNOVACIÓN Y LA AGROINDUSTRIA"],
+    "TOLIMA": ["CENTRO DE LA GESTIÓN AGROECOLÓGICA"],
+    "VALLE DEL CAUCA": ["CENTRO DE BIOTECNOLOGÍA INDUSTRIAL", "CENTRO DE LA CONSTRUCCIÓN"],
+    "VAUPÉS": ["CENTRO DE TECNOLOGÍA AGROINDUSTRIAL DEL VAUPÉS"],
+    "VICHADA": ["CENTRO AGROINDUSTRIAL Y EMPRESARIAL DEL VICHADA"]
+};
+
+const JORNADA_OPCIONES = [
+    "DIURNA", "NOCTURNA", "MIXTA", "VIRTUAL", "DESVIRTUALIZADO"
+];
+
 function HomeForm({ onSubmit, loading, statusMessage, progress }) {
     const [action, setAction] = useState("mapear");
     const [filters, setFilters] = useState({
@@ -16,12 +70,24 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
         centro: "",
         jornada: "",
         codigo_ficha: "",
-        fecha_inicio: new Date().toISOString().slice(0, 10),
-        fecha_fin: new Date().toISOString().slice(0, 10),
+        fecha_inicio: "",
+        fecha_fin: "",
     });
 
+    // Estado para gestionar los centros de formación
+    const [centrosDisponibles, setCentrosDisponibles] = useState([]);
+
     const handleChange = (e) => {
-        setFilters({ ...filters, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFilters(prevFilters => ({ ...prevFilters, [name]: value }));
+
+        // Lógica para actualizar los centros cuando cambia la regional
+        if (name === "regional") {
+            const nuevosCentros = REGIONAL_CENTROS[value] || [];
+            setCentrosDisponibles(nuevosCentros);
+            // Resetear el centro si la regional cambia
+            setFilters(prevFilters => ({ ...prevFilters, centro: "" }));
+        }
     };
 
     const handleFormSubmit = (e) => {
@@ -112,8 +178,9 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
                         Filtros de Búsqueda
                     </h3>
                     
+                    {/* 💡 Nuevo layout de 2 filas de 3 columnas */}
                     <div style={styles.filtersGrid}>
-                        {/* Campo de Código de Ficha */}
+                        {/* Fila 1 */}
                         <div style={styles.filterGroup}>
                             <label htmlFor="codigo_ficha">Código de Ficha:</label>
                             <div style={styles.inputContainer}>
@@ -130,7 +197,6 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
                             </div>
                         </div>
 
-                        {/* Campo de Regional (select) */}
                         <div style={styles.filterGroup}>
                             <label htmlFor="regional">Regional:</label>
                             <div style={styles.inputContainer}>
@@ -143,13 +209,13 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
                                     style={styles.input}
                                 >
                                     <option value="">-- No seleccionar --</option>
-                                    <option value="BOLÍVAR">BOLÍVAR</option>
-                                    {/* Agrega más opciones de regional aquí */}
+                                    {Object.keys(REGIONAL_CENTROS).sort().map(regional => (
+                                        regional && <option key={regional} value={regional}>{regional}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
 
-                        {/* Campo de Centro (select) */}
                         <div style={styles.filterGroup}>
                             <label htmlFor="centro">Centro:</label>
                             <div style={styles.inputContainer}>
@@ -160,16 +226,17 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
                                     value={filters.centro}
                                     onChange={handleChange}
                                     style={styles.input}
+                                    disabled={!filters.regional}
                                 >
                                     <option value="">-- No seleccionar --</option>
-                                    <option value="CARTAGENA">CARTAGENA</option>
-                                    <option value="CENTRO DE COMERCIO Y SERVICIOS">CENTRO DE COMERCIO Y SERVICIOS</option>
-                                    {/* Agrega más opciones de centro aquí */}
+                                    {centrosDisponibles.map(centro => (
+                                        <option key={centro} value={centro}>{centro}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
 
-                        {/* Campo de Jornada (select) */}
+                        {/* Fila 2 */}
                         <div style={styles.filterGroup}>
                             <label htmlFor="jornada">Jornada:</label>
                             <div style={styles.inputContainer}>
@@ -182,15 +249,13 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
                                     style={styles.input}
                                 >
                                     <option value="">-- No seleccionar --</option>
-                                    <option value="DIURNA">DIURNA</option>
-                                    <option value="NOCTURNA">NOCTURNA</option>
-                                    <option value="MIXTA">MIXTA</option>
-                                    <option value="VIRTUAL">VIRTUAL</option>
+                                    {JORNADA_OPCIONES.map(jornada => (
+                                        <option key={jornada} value={jornada}>{jornada}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
                         
-                        {/* Campo de Fecha Inicial */}
                         <div style={styles.filterGroup}>
                             <label htmlFor="fecha_inicio">Fecha inicial:</label>
                             <div style={styles.inputContainer}>
@@ -206,7 +271,6 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
                             </div>
                         </div>
                         
-                        {/* Campo de Fecha Final */}
                         <div style={styles.filterGroup}>
                             <label htmlFor="fecha_fin">Fecha final:</label>
                             <div style={styles.inputContainer}>
@@ -221,7 +285,6 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
                                 />
                             </div>
                         </div>
-
                     </div>
                 </div>
 
