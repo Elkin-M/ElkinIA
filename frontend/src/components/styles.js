@@ -406,6 +406,29 @@ export const styles = {
   },
 };
 
+const colors = {
+  // Gradiente de fondo (se seleccionó el segundo color de cada opción)
+  purple: '#9333EA',
+  blue: '#2563EB',
+  turquoise: '#0891B2',
+  
+  // Colores principales
+  green: '#15803D',
+  white: '#FFFFFF',
+  
+  // Elementos de la interfaz
+  lightGreen: '#059669', // Botón "Ingresar"
+  buttonPurple: '#7C3AED', // Botón "Registrarse"
+  
+  // Elementos decorativos
+  orange: '#EA580C',
+  gold: '#D97706',
+};
+
+// Se crea una cadena de gradiente lineal para un uso más sencillo
+const backgroundGradient = `linear-gradient(to right, ${colors.purple}, ${colors.blue}, ${colors.turquoise})`;
+
+export { colors, backgroundGradient };
 
 // Animación de spinner
 export const spinnerKeyframes = `

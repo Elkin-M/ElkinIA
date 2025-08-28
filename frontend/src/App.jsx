@@ -5,7 +5,7 @@ import HomeForm from "./components/HomeForm";
 import SearchBar from "./components/SearchBar";
 import ResultsTable from "./components/ResultsTable";
 import ConfiguracionPage from "./components/ConfiguracionPage"; 
-import { styles } from './components/styles.js';
+import { styles, colors } from './components/styles.js'; // CAMBIO: Se importa `colors`
 import Footer from "./components/footer.jsx";
 import HeroBanner from "./components/HeroBanner.jsx";
 import JuiciosPage from "./components/JuiciosPage.jsx"; // Importa el nuevo componente
@@ -125,7 +125,7 @@ function AppContent() {
   };
 
   return (
-    <div style={styles.app}>
+    <div className="App" style={{ color: colors.white }}> // CAMBIO AQUÍ: Se aplica el color blanco
       <Navbar />
       <HeroBanner stats={stats} />
       
