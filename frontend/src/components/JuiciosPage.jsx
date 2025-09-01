@@ -617,7 +617,8 @@ const JuiciosPage = () => {
         totalJuicios: data.estadisticas.total_juicios.toLocaleString(),
         aprobados: data.estadisticas.aprobados.toLocaleString(),
         reprobados: data.estadisticas.reprobados.toLocaleString(),
-        fichasActivas: data.estadisticas.total_fichas.toLocaleString()
+        // Usar la propiedad 'fichas_analizadas' que es la que existe en la respuesta de la API
+        fichasActivas: data.estadisticas.fichas_analizadas.toLocaleString()
       });
 
     } catch (error) {
