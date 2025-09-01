@@ -13,6 +13,9 @@ from datetime import datetime
 from backend.juicio_logic import encolar_descarga
 from scraper.run_scraper import ejecutar_scraper
 
+# Importar el router de juicios
+from backend.juicios_router import router as juicios_router
+
 # Configuración básica de logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -44,6 +47,9 @@ app.add_middleware(
 # Montar carpetas estáticas y de descargas
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.mount("/descargas", StaticFiles(directory=RUTA_REPORTES), name="descargas")
+
+# ✨ Incluir el router de juicios para que sus endpoints sean accesibles
+app.include_router(juicios_router)
 
 # Modelos de datos
 class FiltrosMapeo(BaseModel):
