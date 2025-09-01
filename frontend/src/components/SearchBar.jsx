@@ -1,34 +1,75 @@
-import React from 'react';
-import { colors } from './styles.js';
+import React, { useState } from "react";
+import { Search } from "lucide-react";
+import { styles } from './styles.js';
 
-const SearchBar = ({ onSearch }) => {
-  const [query, setQuery] = React.useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSearch(query);
-  };
+// ==============================
+// Componente SearchBar mejorado
+// ==============================
+function SearchBar({ query, setQuery, resultCount, totalCount }) {
+  const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <form className="flex w-full max-w-lg" onSubmit={handleSubmit}>
-      <input
-        type="text"
-        placeholder="Buscar..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="flex-grow p-3 rounded-l-lg focus:outline-none"
-      />
-      <button
-        type="submit"
-        className="p-3 rounded-r-lg"
-        style={{ backgroundColor: colors.lightGreen, color: colors.white }}
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-        </svg>
-      </button>
-    </form>
+    <div style={styles.card}>
+      <div style={{ padding: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
+          <div style={{
+            position: 'relative',
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+          }}>
+            <Search size={20} style={{
+              position: 'absolute',
+              left: '16px',
+              color: '#6B7280',
+              zIndex: 1,
+            }} />
+            <input
+              type="text"
+              placeholder="Buscar por número de ficha, nombre del programa, centro..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              style={{
+                ...styles.input,
+                paddingLeft: '48px',
+                width: '100%',
+                ...(isFocused ? styles.inputFocus : {}),
+              }}
+            />
+          </div>
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              style={{
+                background: '#EF4444',
+                color: 'white',
+                border: 'none',
+                padding: '12px 20px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'background-color 0.2s ease',
+              }}
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+        {query && (
+          <p style={{
+            fontSize: '14px',
+            color: '#6B7280',
+            margin: 0,
+          }}>
+            {resultCount} de {totalCount} resultado{resultCount !== 1 ? 's' : ''} para "{query}"
+          </p>
+        )}
+      </div>
+    </div>
   );
-};
+}
 
 export default SearchBar;

@@ -1,0 +1,19 @@
+.heroBannerPattern {
+  position: relative;
+  overflow: hidden;
+}
+
+.heroBannerPattern::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 150%;
+  height: 15%;
+  bottom: 0;
+  object-fit: cover;
+  background: #6832b5;
+  background-image: url("/patteners.webp"); /* 👈 tu patrón */
+  background-repeat: repeat-x;
+  background-size: cover;
+  opacity: 0.9;
+}

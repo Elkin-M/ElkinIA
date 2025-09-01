@@ -54,7 +54,7 @@ function ResultsTable({ data, onDownloadSingle, onBulkDownload, loading }) {
     return (
       <div style={styles.card}>
         <div style={{ 
-          padding: '60px 24px',
+          padding: '60px 24px 153px',
           textAlign: 'center',
         }}>
           <Search size={48} color="#9CA3AF" style={{ marginBottom: '16px' }} />

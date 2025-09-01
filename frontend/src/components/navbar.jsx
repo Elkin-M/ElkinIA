@@ -1,32 +1,62 @@
-import React from 'react';
-import { colors } from './styles.js';
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Building, Home, FileText, Settings } from "lucide-react";
+import { styles } from './styles.js';
 
-const Navbar = () => {
+// ==============================
+// Componente Navbar
+// ==============================
+function Navbar() {
+  const location = useLocation();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  const isActive = (path) => location.pathname === path;
+  
   return (
-    <nav className="bg-gray-800 text-white p-4 flex justify-between items-center">
-      <div className="flex items-center space-x-4">
-        <span className="font-bold text-xl">Betowa</span>
-        <a href="#" className="hover:text-gray-300">Inicio</a>
-        <a href="#" className="hover:text-gray-300">Pruebas</a>
-      </div>
-      <div className="flex items-center space-x-4">
-        <a
-          href="#"
-          className="px-4 py-2 rounded-lg font-bold"
-          style={{ backgroundColor: colors.lightGreen, color: colors.white }}
-        >
-          Ingresar
-        </a>
-        <a
-          href="#"
-          className="px-4 py-2 rounded-lg font-bold"
-          style={{ backgroundColor: colors.buttonPurple, color: colors.white }}
-        >
-          Registrarse
-        </a>
+    <nav style={styles.navbar}>
+      <div style={styles.navContainer}>
+        <Link to="/" style={styles.logo}>
+          <div style={styles.logoIcon}>
+            <Building size={24} />
+          </div>
+          <span>SENA Dashboard</span>
+        </Link>
+        
+        <div style={styles.navLinks}>
+          <Link 
+            to="/" 
+            style={{
+              ...styles.navLink,
+              ...(isActive('/') ? styles.navLinkActive : {})
+            }}
+          >
+            <Home size={18} />
+            Dashboard
+          </Link>
+          <Link 
+            to="/juicios" 
+            style={{
+              ...styles.navLink,
+              ...(isActive('/juicios') ? styles.navLinkActive : {})
+            }}
+          >
+            <FileText size={18} />
+            Juicios
+          </Link>
+          <Link 
+            to="/configuracion" 
+            style={{
+              ...styles.navLink,
+              ...(isActive('/configuracion') ? styles.navLinkActive : {})
+            }}
+          >
+            <Settings size={18} />
+            Configuración
+          </Link>
+        </div>
       </div>
     </nav>
   );
-};
+}
 
 export default Navbar;

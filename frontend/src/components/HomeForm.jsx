@@ -168,9 +168,8 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
                     <div style={styles.filtersGrid}>
                         {/* Fila 1 */}
                         <div style={styles.filterGroup}>
-                            <label htmlFor="codigo_ficha">Código de Ficha:</label>
+                            <label htmlFor="codigo_ficha"><Search size={20} color="#6B7280" /> Código de Ficha:</label>
                             <div style={styles.inputContainer}>
-                                <Search size={20} color="#6B7280" />
                                 <input
                                     type="text"
                                     id="codigo_ficha"
@@ -184,9 +183,8 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
                         </div>
 
                         <div style={styles.filterGroup}>
-                            <label htmlFor="departamento">Departamento:</label>
+                            <label htmlFor="departamento"><Building size={20} color="#6B7280" /> Departamento:</label>
                             <div style={styles.inputContainer}>
-                                <Building size={20} color="#6B7280" />
                                 <select
                                     id="departamento"
                                     name="departamento"
@@ -203,9 +201,8 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
                         </div>
 
                         <div style={styles.filterGroup}>
-                            <label htmlFor="municipio">Municipio:</label>
+                            <label htmlFor="municipio"><MapPin size={20} color="#6B7280" /> Municipio:</label>
                             <div style={styles.inputContainer}>
-                                <MapPin size={20} color="#6B7280" />
                                 <select
                                     id="municipio"
                                     name="municipio"
@@ -224,9 +221,8 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
 
                         {/* Fila 2 */}
                         <div style={styles.filterGroup}>
-                            <label htmlFor="jornada">Jornada:</label>
+                            <label htmlFor="jornada"> <Play size={20} color="#6B7280" /> Jornada:</label>
                             <div style={styles.inputContainer}>
-                                <Play size={20} color="#6B7280" />
                                 <select
                                     id="jornada"
                                     name="jornada"
@@ -243,9 +239,8 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
                         </div>
                         
                         <div style={styles.filterGroup}>
-                            <label htmlFor="fecha_inicio">Fecha inicial:</label>
+                            <label htmlFor="fecha_inicio"><Calendar size={20} color="#6B7280" /> Fecha inicial:</label>
                             <div style={styles.inputContainer}>
-                                <Calendar size={20} color="#6B7280" />
                                 <input
                                     type="date"
                                     id="fecha_inicio"
@@ -258,9 +253,8 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
                         </div>
                         
                         <div style={styles.filterGroup}>
-                            <label htmlFor="fecha_fin">Fecha final:</label>
+                            <label htmlFor="fecha_fin"><Calendar size={20} color="#6B7280" /> Fecha final:</label>
                             <div style={styles.inputContainer}>
-                                <Calendar size={20} color="#6B7280" />
                                 <input
                                     type="date"
                                     id="fecha_fin"

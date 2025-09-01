@@ -125,7 +125,7 @@ function AppContent() {
   };
 
   return (
-    <div className="App" style={{ color: colors.white }}> // CAMBIO AQUÍ: Se aplica el color blanco
+    <div className="App" style={{ color: colors.white }}> 
       <Navbar />
       <HeroBanner stats={stats} />
       

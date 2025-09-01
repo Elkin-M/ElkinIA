@@ -8,23 +8,22 @@ import { Search, Filter, Download, MapPin, Calendar, Building, Users, Play, Home
 
 export const styles = {
   // Layout principal
-  app: {
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    backgroundColor: '#F8FAFC',
-  },
+app: {
+  display: 'flex',
+  flexDirection: 'column',
+  fontFamily: '"Trebuchet MS", sans-serif',
+  backgroundColor: '#F8FAFC',
+},
+
   
-  // Navbar
-  navbar: {
-    backgroundColor: 'white',
-    borderBottom: '1px solid #E2E8F0',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+navbar: {
+    background: `linear-gradient(to right, #9333EA, #2563EB, #0891B2)`, // degradado violeta → azul → turquesa
     position: 'sticky',
     top: 0,
     zIndex: 1000,
+    boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
   },
+
   navContainer: {
     maxWidth: '1200px',
     margin: '0 auto',
@@ -40,17 +39,18 @@ export const styles = {
     gap: '12px',
     fontSize: '20px',
     fontWeight: '700',
-    color: '#1E293B',
+    color: '#FFFFFF',
+    textDecoration: 'none',
   },
   logoIcon: {
     width: '40px',
     height: '40px',
-    backgroundColor: '#3B82F6',
+    backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: '8px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: 'white',
+    color: '#FFF',
   },
   navLinks: {
     display: 'flex',
@@ -61,27 +61,63 @@ export const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    color: '#64748B',
+    color: '#FFFFFF',
     textDecoration: 'none',
-    padding: '8px 16px',
-    borderRadius: '6px',
-    transition: 'all 0.2s ease',
     fontWeight: '500',
+    transition: 'opacity 0.2s ease',
+    opacity: 0.85,
   },
   navLinkActive: {
-    color: '#3B82F6',
-    backgroundColor: '#EFF6FF',
+    textDecoration: 'underline',
+    textUnderlineOffset: '6px',
+    opacity: 1,
+  },
+
+  // Botones extra de navbar
+  navButtons: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'center',
+  },
+  buttonLogin: {
+    backgroundColor: '#FFFFFF',
+    color: '#15803D', // verde
+    padding: '8px 16px',
+    borderRadius: '6px',
+    fontWeight: '600',
+    border: '1px solid #15803D',
+    textDecoration: 'none',
+    transition: 'all 0.2s ease',
+  },
+  buttonLoginHover: {
+    backgroundColor: '#F0FDF4',
+  },
+  buttonRegister: {
+    backgroundColor: '#7C3AED', // púrpura
+    color: '#FFFFFF',
+    padding: '8px 16px',
+    borderRadius: '6px',
+    fontWeight: '600',
+    textDecoration: 'none',
+    transition: 'background 0.2s ease',
+  },
+  buttonRegisterHover: {
+    backgroundColor: '#6D28D9',
   },
   
   // Banner hero
   heroBanner: {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    backgroundImage: `url('/bg-betowa.webp')`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
     color: 'white',
     padding: '60px 24px',
     textAlign: 'center',
     position: 'relative',
     overflow: 'hidden',
   },
+
+
   heroContent: {
     maxWidth: '800px',
     margin: '0 auto',
@@ -142,6 +178,10 @@ export const styles = {
     marginBottom: '24px',
   },
   cardHeader: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: '24px 24px 0',
     borderBottom: '1px solid #E2E8F0',
     paddingBottom: '16px',
@@ -187,11 +227,12 @@ export const styles = {
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     position: 'relative',
-    backgroundColor: 'white',
+    backgroundColor: 'purple',
+    backgroundImage: 'url(/patteners.webp)',
   },
   actionCardSelected: {
     borderColor: '#3B82F6',
-    backgroundColor: '#F8FAFF',
+    backgroundColor: '#4975e5ff',
     transform: 'translateY(-2px)',
     boxShadow: '0 4px 12px rgba(59, 130, 246, 0.15)',
   },
@@ -217,18 +258,19 @@ export const styles = {
   actionTitle: {
     fontSize: '1.1rem',
     fontWeight: '600',
-    color: '#1E293B',
+    color: '#ffffffff',
     margin: '0 0 4px 0',
   },
   actionDescription: {
     fontSize: '0.875rem',
-    color: '#64748B',
+    color: '#ffffffff',
     margin: 0,
     lineHeight: '1.4',
   },
   
   // Inputs mejorados
   filtersGrid: {
+    color: '#393636ff',
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
     gap: '20px',
@@ -394,14 +436,60 @@ export const styles = {
   
   // Responsive
   '@media (max-width: 768px)': {
+    // Navbar
+    navLinks: {
+      display: 'none', // Oculta los links de navegación en móviles
+    },
+    navButtons: {
+      display: 'none', // Oculta los botones de la navbar en móviles
+    },
+    navContainer: {
+      height: '56px',
+    },
+    logo: {
+      fontSize: '18px',
+    },
+    
+    // Hero Banner
+    heroBanner: {
+      padding: '40px 16px',
+    },
     heroTitle: {
       fontSize: '2.5rem',
     },
+    heroSubtitle: {
+      fontSize: '1rem',
+    },
+    heroStats: {
+      gridTemplateColumns: '1fr', // Las tarjetas de estadísticas se apilan en móviles
+      gap: '24px',
+    },
+    statCard: {
+      padding: '20px',
+    },
+    statNumber: {
+      fontSize: '2rem',
+    },
+    
+    // Contenido principal
+    mainContent: {
+      padding: '24px 16px',
+    },
+    
+    // Formularios y filtros
     actionGrid: {
-      gridTemplateColumns: '1fr',
+      gridTemplateColumns: '1fr', // Las tarjetas de acción se apilan
     },
     filtersGrid: {
-      gridTemplateColumns: '1fr',
+      gridTemplateColumns: '1fr', // Los campos de filtro se apilan
+    },
+
+    // Tabla
+    tableHeaderCell: {
+      fontSize: '0.75rem', // Reduce el tamaño de la fuente para las celdas del encabezado
+    },
+    tableCell: {
+      padding: '12px 10px', // Reduce el padding para las celdas
     },
   },
 };
