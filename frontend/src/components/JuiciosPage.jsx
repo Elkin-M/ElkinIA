@@ -1200,7 +1200,7 @@ const JuiciosPage = () => {
       allJuicios = allJuicios.filter(j => (j.nombre_completo || '').toLowerCase().includes(filters.aprendiz.toLowerCase()));
     }
     if (filters.cedula) {
-      allJuicios = allJuicios.filter(j => (j.numero_documento || '').includes(filters.cedula));
+      allJuicios = allJuicios.filter(j => String(j.numero_documento || '').includes(filters.cedula));
     }
     if (filters.regional) {
       allJuicios = allJuicios.filter(j => j.regional === filters.regional);
