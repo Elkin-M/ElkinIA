@@ -1317,8 +1317,8 @@ const JuiciosPage = () => {
 
   // Generate reports
   const generarReporte = async () => {
-    const { fechaInicio, fechaFin, formato, tipo } = reportConfig;
-    
+    const { fechaInicio, fechaFin, formato, tipo, incluirGraficos, incluirResumen } = reportConfig;
+
     if (!fechaInicio || !fechaFin) {
       showMessage('Por favor seleccione el rango de fechas', 'error');
       return;
@@ -1326,12 +1326,49 @@ const JuiciosPage = () => {
 
     showLoading(true);
     try {
-      // Simulate report generation
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
-      const filename = `reporte_${tipo}_${timestamp}.${formato}`;
-      
+      // Construir parámetros para el backend
+      const params = new URLSearchParams({
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+        formato,
+        tipo,
+        incluir_graficos: incluirGraficos ? 'true' : 'false',
+        incluir_resumen: incluirResumen ? 'true' : 'false'
+      });
+
+      // Llamada al backend para generar el reporte
+      const response = await fetch(`${API_BASE}/reportes/generar?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al generar el reporte');
+      }
+
+      // Recibe el archivo como blob
+      const blob = await response.blob();
+      // Obtiene el nombre sugerido del archivo desde el header o lo genera
+      let filename = response.headers.get('Content-Disposition');
+      if (filename && filename.includes('filename=')) {
+        filename = filename.split('filename=')[1].replace(/"/g, '');
+      } else {
+        filename = `reporte_${tipo}_${new Date().toISOString().slice(0,19).replace(/[:-]/g,'')}.${formato}`;
+      }
+
+      // Descarga el archivo
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      // Añade al historial
       const newReport = {
         id: Date.now(),
         filename,
@@ -1341,14 +1378,12 @@ const JuiciosPage = () => {
         fechaInicio,
         fechaFin,
         estado: 'completado',
-        tamano: '2.4 MB'
+        tamano: `${(blob.size / (1024 * 1024)).toFixed(2)} MB`
       };
-      
       setReportHistory(prev => [newReport, ...prev]);
-      showMessage(`Reporte ${filename} generado correctamente`, 'success');
-      
+      showMessage(`Reporte ${filename} generado y descargado correctamente`, 'success');
     } catch (error) {
-      showMessage('Error al generar reporte', 'error');
+      showMessage('Error al generar o descargar el reporte', 'error');
     } finally {
       showLoading(false);
     }
@@ -2498,7 +2533,7 @@ const JuiciosPage = () => {
                                   </div>
                                 </td>
                                 <td style={styles.tableCell}>
-                                  <button style={{ ...styles.buttonPrimary, padding: '8px 16px', marginRight: '8px' }}>
+                                  <button style={{ ...styles.buttonPrimary, padding: '8px 16px', marginRight: '8px' }} onClick={() => descargarReporte(report)}>
                                     <Download size={16} />
                                     <span>Descargar</span>
                                   </button>
