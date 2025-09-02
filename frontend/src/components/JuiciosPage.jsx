@@ -1018,7 +1018,8 @@ const JuiciosPage = () => {
     if (fechaFin) params.append('fecha_fin', fechaFin);
     if (instructor) params.append('instructor', instructor);
 
-    const url = `${API_BASE}/?${params.toString()}`;
+    // Corrige la URL para que no tenga doble slash
+    const url = `${API_BASE}?${params.toString()}`;
 
     showLoading(true);
     hideMessages();
@@ -1044,10 +1045,16 @@ const JuiciosPage = () => {
         throw new Error(data.detail || 'Error al consultar juicios');
       }
 
-      setConsultaResults(data.resultados);
+      // Guarda la respuesta completa
+      setConsultaResults(data);
+
+      // Calcula estadísticas y filtra resultados usando la respuesta completa
       calculateStats(data);
-      applyFiltersAndSort(data.resultados);
-      showMessage(`Encontrados ${data.resultados?.length || 0} resultados`, 'success');
+      applyFiltersAndSort(data);
+
+      // Muestra el número de resultados encontrados
+      let resultados = Array.isArray(data) ? data : data.resultados;
+      showMessage(`Encontrados ${resultados?.length || 0} resultados`, 'success');
 
     } catch (error) {
       console.error('Error en buscarJuicios:', error);
@@ -1988,7 +1995,7 @@ const JuiciosPage = () => {
                     ...styles.statNumber,
                     color: stats.tendenciaMes >= 0 ? '#10B981' : '#EF4444'
                   }}>
-                    {stats.tendenciaMes >= 0 ? '+' : ''}{stats.tendenciaMes}%
+                    {stats.tendenciaMes >=  0 ? '+' : ''}{stats.tendenciaMes}%
                   </div>
                   <div style={styles.statLabel}>Tendencia del Mes</div>
                   <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
