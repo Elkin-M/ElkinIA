@@ -1148,38 +1148,29 @@ const JuiciosPage = () => {
     }
 
     let allJuicios = [];
-    // Si cada elemento tiene 'juicios', es la estructura anidada
-    if (resultados.length > 0 && resultados[0].juicios) {
-      resultados.forEach(ficha => {
-        if (ficha.juicios) {
-          ficha.juicios.forEach(juicio => {
-            allJuicios.push({
-              ...juicio,
-              ficha: ficha.ficha,
-              programa: ficha.info_programa?.denominacion || 'N/A',
-              centro: ficha.info_programa?.centro_formacion || 'N/A'
-            });
+    resultados.forEach(ficha => {
+      if (ficha.juicios) {
+        ficha.juicios.forEach(juicio => {
+          allJuicios.push({
+            ...juicio,
+            ficha: ficha.ficha,
+            programa: ficha.info_programa?.denominacion || 'N/A',
+            centro: ficha.info_programa?.centro_formacion || 'N/A'
           });
-        }
-      });
-    } else {
-      // Si es un array plano, simplemente copia los juicios
-      allJuicios = resultados.map(j => ({
-        ...j,
-        ficha: j.ficha || j.numero_ficha || '',
-        programa: j.programa || j.denominacion || '',
-        centro: j.centro_formacion || j.centro || ''
-      }));
-    }
+        });
+      }
+    });
 
     // Apply sorting
     allJuicios.sort((a, b) => {
       let aValue = a[sortField];
       let bValue = b[sortField];
-      if (sortField === 'fecha_hora_juicio' || sortField === 'fecha_juicio') {
+      
+      if (sortField === 'fecha_hora_juicio') {
         aValue = new Date(aValue);
         bValue = new Date(bValue);
       }
+      
       if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
       if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
       return 0;
@@ -1870,7 +1861,16 @@ const JuiciosPage = () => {
                   <div style={styles.cardContent}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                       <div style={{ padding: '16px', backgroundColor: '#ECFDF5', borderRadius: '8px' }}>
-                       
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#065F46' }}>{filteredResults.length}</div>
+                        <div style={{ fontSize: '14px', color: '#374151' }}>Resultados encontrados</div>
+                      </div>
+                      <div style={{ padding: '16px', backgroundColor: '#E0F2FE', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E40AF' }}>
+                          {filteredResults.filter(j => j.aprobado).length}
+                        </div>
+                        <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Aprobados</div>
+                      </div>
+                      <div style={{ padding: '16px', backgroundColor: '#FEF2F2', borderRadius: '8px' }}>
                         <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#991B1B' }}>
                           {filteredResults.filter(j => !j.aprobado).length}
                         </div>
