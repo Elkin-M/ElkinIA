@@ -1423,10 +1423,33 @@ const JuiciosPage = () => {
     new Set(filteredResults.map(j => j.nombre_completo))
   );
 
-  // Filtra los juicios de la persona seleccionada
-  const juiciosPersona = selectedPerson
-    ? filteredResults.filter(j => j.nombre_completo === selectedPerson)
-    : [];
+  // Info adicional por persona
+  const infoPersonas = {};
+  filteredResults.forEach(j => {
+    if (!infoPersonas[j.nombre_completo]) {
+      infoPersonas[j.nombre_completo] = {
+        numero_documento: j.numero_documento,
+        ficha: j.ficha,
+        programa: j.programa,
+        centro: j.centro
+      };
+    }
+  });
+
+  // Detecta competencias únicas para el desplegable
+  const competenciasDisponibles = Array.from(
+    new Set(filteredResults.map(j => j.competencia).filter(Boolean))
+  );
+
+  // Detecta instructores únicos para el desplegable
+  const instructoresDisponibles = Array.from(
+    new Set(filteredResults.map(j => j.funcionario_registro).filter(Boolean))
+  );
+
+  // Detecta fichas únicas para el desplegable
+  const fichasDisponibles = Array.from(
+    new Set(filteredResults.map(j => j.ficha).filter(Boolean))
+  );
 
   return (
     <div style={styles.app}>
@@ -1727,21 +1750,23 @@ const JuiciosPage = () => {
                 </div>
                 <div style={styles.cardContent}>
                   <div style={styles.formGrid}>
+                    {/* Fichas específicas: desplegable dinámico */}
                     <div style={styles.inputGroup}>
                       <label style={styles.inputLabel}>
                         <IdCard size={16} /> Fichas Específicas
                       </label>
-                      <input
-                        type="text"
+                      <select
                         value={filters.ficha}
                         onChange={(e) => handleFilterChange('ficha', e.target.value)}
-                        placeholder="Ej: 23492,25958 (separadas por coma)"
-                        style={styles.input}
-                        onKeyPress={(e) => e.key === 'Enter' && buscarJuicios()}
-                        onFocus={(e) => e.target.style.borderColor = '#F97316'}
-                        onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
-                      />
+                        style={styles.select}
+                      >
+                        <option value="">Todas las fichas</option>
+                        {fichasDisponibles.map(f => (
+                          <option key={f} value={f}>{f}</option>
+                        ))}
+                      </select>
                     </div>
+                    {/* Aprendiz */}
                     <div style={styles.inputGroup}>
                       <label style={styles.inputLabel}>
                         <User size={16} /> Nombre del Aprendiz
@@ -1753,25 +1778,25 @@ const JuiciosPage = () => {
                         placeholder="Buscar por nombre"
                         style={styles.input}
                         onKeyPress={(e) => e.key === 'Enter' && buscarJuicios()}
-                        onFocus={(e) => e.target.style.borderColor = '#F97316'}
-                        onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
                       />
                     </div>
+                    {/* Competencia: desplegable dinámico */}
                     <div style={styles.inputGroup}>
                       <label style={styles.inputLabel}>
                         <BadgeCheck size={16} /> Competencia
                       </label>
-                      <input
-                        type="text"
+                      <select
                         value={filters.competencia}
                         onChange={(e) => handleFilterChange('competencia', e.target.value)}
-                        placeholder="Buscar por competencia"
-                        style={styles.input}
-                        onKeyPress={(e) => e.key === 'Enter' && buscarJuicios()}
-                        onFocus={(e) => e.target.style.borderColor = '#F97316'}
-                        onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
-                      />
+                        style={styles.select}
+                      >
+                        <option value="">Todas las competencias</option>
+                        {competenciasDisponibles.map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
                     </div>
+                    {/* Resultado */}
                     <div style={styles.inputGroup}>
                       <label style={styles.inputLabel}>
                         <Gavel size={16} /> Resultado
@@ -1780,12 +1805,27 @@ const JuiciosPage = () => {
                         value={filters.juicio}
                         onChange={(e) => handleFilterChange('juicio', e.target.value)}
                         style={styles.select}
-                        onFocus={(e) => e.target.style.borderColor = '#F97316'}
-                        onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
                       >
                         <option value="">Todos</option>
                         <option value="APROBADO">Aprobado</option>
                         <option value="REPROBADO">Reprobado</option>
+                        <option value="POR EVALUAR">Por Evaluar</option>
+                      </select>
+                    </div>
+                    {/* Instructor: desplegable dinámico */}
+                    <div style={styles.inputGroup}>
+                      <label style={styles.inputLabel}>
+                        <Presentation size={16} /> Instructor
+                      </label>
+                      <select
+                        value={filters.instructor}
+                        onChange={(e) => handleFilterChange('instructor', e.target.value)}
+                        style={styles.select}
+                      >
+                        <option value="">Todos los instructores</option>
+                        {instructoresDisponibles.map(i => (
+                          <option key={i} value={i}>{i}</option>
+                        ))}
                       </select>
                     </div>
                     <div style={styles.inputGroup}>
@@ -1797,8 +1837,6 @@ const JuiciosPage = () => {
                         value={filters.fechaInicio}
                         onChange={(e) => handleFilterChange('fechaInicio', e.target.value)}
                         style={styles.input}
-                        onFocus={(e) => e.target.style.borderColor = '#F97316'}
-                        onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
                       />
                     </div>
                     <div style={styles.inputGroup}>
@@ -1810,43 +1848,7 @@ const JuiciosPage = () => {
                         value={filters.fechaFin}
                         onChange={(e) => handleFilterChange('fechaFin', e.target.value)}
                         style={styles.input}
-                        onFocus={(e) => e.target.style.borderColor = '#F97316'}
-                        onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
                       />
-                    </div>
-                    <div style={styles.inputGroup}>
-                      <label style={styles.inputLabel}>
-                        <Presentation size={16} /> Instructor
-                      </label>
-                      <input
-                        type="text"
-                        value={filters.instructor}
-                        onChange={(e) => handleFilterChange('instructor', e.target.value)}
-                        placeholder="Nombre del instructor"
-                        style={styles.input}
-                        onKeyPress={(e) => e.key === 'Enter' && buscarJuicios()}
-                        onFocus={(e) => e.target.style.borderColor = '#F97316'}
-                        onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
-                      />
-                    </div>
-                    <div style={styles.inputGroup}>
-                      <label style={styles.inputLabel}>
-                        <Building size={16} /> Programa
-                      </label>
-                      <select
-                        value={filters.programa}
-                        onChange={(e) => handleFilterChange('programa', e.target.value)}
-                        style={styles.select}
-                        onFocus={(e) => e.target.style.borderColor = '#F97316'}
-                        onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
-                      >
-                        <option value="">Todos los programas</option>
-                        <option value="software">Análisis y Desarrollo de Software</option>
-                        <option value="admin">Gestión Administrativa</option>
-                        <option value="mercadeo">Mercadeo</option>
-                        <option value="contabilidad">Contabilización de Operaciones</option>
-                        <option value="sistemas">Sistemas</option>
-                      </select>
                     </div>
                   </div>
                   <div style={styles.buttonGroup}>
@@ -1921,6 +1923,13 @@ const JuiciosPage = () => {
                               {filteredResults.filter(j => j.nombre_completo === nombre).length} juicios
                             </span>
                           </button>
+                          {/* Info adicional del estudiante */}
+                          <div style={{ fontSize: '12px', color: '#374151', marginLeft: '32px', marginTop: '4px' }}>
+                            <strong>Documento:</strong> {infoPersonas[nombre]?.numero_documento || 'N/A'}<br />
+                            <strong>Ficha:</strong> {infoPersonas[nombre]?.ficha || 'N/A'}<br />
+                            <strong>Programa:</strong> {infoPersonas[nombre]?.programa || 'N/A'}<br />
+                            <strong>Centro:</strong> {infoPersonas[nombre]?.centro || 'N/A'}
+                          </div>
                         </li>
                       ))}
                     </ul>
