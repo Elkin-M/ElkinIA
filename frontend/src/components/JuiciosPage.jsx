@@ -1148,27 +1148,41 @@ const JuiciosPage = () => {
     }
 
     let allJuicios = [];
-    // Si los objetos no tienen 'juicios', entonces son los juicios planos del backend
     if (resultados.length && !resultados[0].juicios) {
-      allJuicios = resultados.map(j => ({
-        nombre_completo: `${j.nombre || ''} ${j.apellidos || ''}`.trim(),
-        numero_documento: j["número_de_documento"],
-        competencia: j.competencia,
-        resultado_aprendizaje: j.resultado_de_aprendizaje,
-        juicio_evaluacion: j.juicio_de_evaluación,
-        aprobado: (j.juicio_de_evaluación || '').toUpperCase() === 'APROBADO',
-        fecha_hora_juicio: j.fecha_y_hora_del_juicio_evaluativo,
-        funcionario_registro: j.funcionario_que_registro_el_juicio_evaluativo,
-        ficha: j.ficha || '', // si tienes el número de ficha en el objeto
-        programa: j.programa || '',
-        centro: j.centro_formacion || ''
-      }));
+      allJuicios = resultados.map(j => {
+        let estado = (j.juicio_de_evaluación || '').toUpperCase();
+        let aprobado = null;
+        if (estado === 'APROBADO') aprobado = true;
+        else if (estado === 'REPROBADO') aprobado = false;
+        // Si es 'POR EVALUAR' o cualquier otro, aprobado = null
+
+        return {
+          nombre_completo: `${j.nombre || ''} ${j.apellidos || ''}`.trim(),
+          numero_documento: j["número_de_documento"],
+          competencia: j.competencia,
+          resultado_aprendizaje: j.resultado_de_aprendizaje,
+          juicio_evaluacion: j.juicio_de_evaluación,
+          aprobado,
+          fecha_hora_juicio: j.fecha_y_hora_del_juicio_evaluativo,
+          funcionario_registro: j.funcionario_que_registro_el_juicio_evaluativo,
+          ficha: j.ficha || '',
+          programa: j.programa || '',
+          centro: j.centro_formacion || ''
+        };
+      });
     } else {
       resultados.forEach(ficha => {
         if (ficha.juicios) {
           ficha.juicios.forEach(juicio => {
+            let estado = (juicio.juicio_evaluacion || '').toUpperCase();
+            let aprobado = null;
+            if (estado === 'APROBADO') aprobado = true;
+            else if (estado === 'REPROBADO') aprobado = false;
+            // Si es 'POR EVALUAR' o cualquier otro, aprobado = null
+
             allJuicios.push({
               ...juicio,
+              aprobado,
               ficha: ficha.ficha,
               programa: ficha.info_programa?.denominacion || 'N/A',
               centro: ficha.info_programa?.centro_formacion || 'N/A'
@@ -1867,7 +1881,7 @@ const JuiciosPage = () => {
                 </div>
               </div>
 
-              {/* Results Summary */}
+              {/* Solo una vez el resumen de resultados */}
               {filteredResults.length > 0 && (
                 <div style={styles.card}>
                   <div style={{ ...styles.cardHeader, background: 'linear-gradient(90deg, #059669, #047857)' }}>
@@ -1883,22 +1897,28 @@ const JuiciosPage = () => {
                       </div>
                       <div style={{ padding: '16px', backgroundColor: '#E0F2FE', borderRadius: '8px' }}>
                         <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E40AF' }}>
-                          {filteredResults.filter(j => j.aprobado).length}
+                          {filteredResults.filter(j => j.aprobado === true).length}
                         </div>
                         <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Aprobados</div>
                       </div>
                       <div style={{ padding: '16px', backgroundColor: '#FEF2F2', borderRadius: '8px' }}>
                         <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#991B1B' }}>
-                          {filteredResults.filter(j => !j.aprobado).length}
+                          {filteredResults.filter(j => j.aprobado === false).length}
                         </div>
                         <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Reprobados</div>
+                      </div>
+                      <div style={{ padding: '16px', backgroundColor: '#FDE68A', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#92400E' }}>
+                          {filteredResults.filter(j => j.aprobado === null).length}
+                        </div>
+                        <div style={{ fontSize: '14px', color: '#374151' }}>Por Evaluar</div>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Results Table */}
+              {/* Solo una vez la tabla de resultados */}
               {filteredResults.length > 0 && (
                 <div style={styles.tableContainer}>
                   <table style={styles.table}>
@@ -1955,7 +1975,7 @@ const JuiciosPage = () => {
                   <div style={styles.pagination}>
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
+                      disabled={currentPage <= 1}
                       style={styles.paginationButton}
                     >
                       Anterior
@@ -1963,7 +1983,7 @@ const JuiciosPage = () => {
                     {renderPaginationButtons()}
                     <button
                       onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
+                      disabled={currentPage >= totalPages}
                       style={styles.paginationButton}
                     >
                       Siguiente
@@ -1998,15 +2018,21 @@ const JuiciosPage = () => {
                       </div>
                       <div style={{ padding: '16px', backgroundColor: '#E0F2FE', borderRadius: '8px' }}>
                         <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E40AF' }}>
-                          {filteredResults.filter(j => j.aprobado).length}
+                          {filteredResults.filter(j => j.aprobado === true).length}
                         </div>
                         <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Aprobados</div>
                       </div>
                       <div style={{ padding: '16px', backgroundColor: '#FEF2F2', borderRadius: '8px' }}>
                         <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#991B1B' }}>
-                          {filteredResults.filter(j => !j.aprobado).length}
+                          {filteredResults.filter(j => j.aprobado === false).length}
                         </div>
                         <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Reprobados</div>
+                      </div>
+                      <div style={{ padding: '16px', backgroundColor: '#FDE68A', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#92400E' }}>
+                          {filteredResults.filter(j => j.aprobado === null).length}
+                        </div>
+                        <div style={{ fontSize: '14px', color: '#374151' }}>Por Evaluar</div>
                       </div>
                     </div>
                   </div>
@@ -2070,7 +2096,7 @@ const JuiciosPage = () => {
                   <div style={styles.pagination}>
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
+                      disabled={currentPage <= 1}
                       style={styles.paginationButton}
                     >
                       Anterior
@@ -2078,7 +2104,7 @@ const JuiciosPage = () => {
                     {renderPaginationButtons()}
                     <button
                       onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
+                      disabled={currentPage >= totalPages}
                       style={styles.paginationButton}
                     >
                       Siguiente
@@ -2113,15 +2139,21 @@ const JuiciosPage = () => {
                       </div>
                       <div style={{ padding: '16px', backgroundColor: '#E0F2FE', borderRadius: '8px' }}>
                         <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E40AF' }}>
-                          {filteredResults.filter(j => j.aprobado).length}
+                          {filteredResults.filter(j => j.aprobado === true).length}
                         </div>
                         <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Aprobados</div>
                       </div>
                       <div style={{ padding: '16px', backgroundColor: '#FEF2F2', borderRadius: '8px' }}>
                         <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#991B1B' }}>
-                          {filteredResults.filter(j => !j.aprobado).length}
+                          {filteredResults.filter(j => j.aprobado === false).length}
                         </div>
                         <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Reprobados</div>
+                      </div>
+                      <div style={{ padding: '16px', backgroundColor: '#FDE68A', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#92400E' }}>
+                          {filteredResults.filter(j => j.aprobado === null).length}
+                        </div>
+                        <div style={{ fontSize: '14px', color: '#374151' }}>Por Evaluar</div>
                       </div>
                     </div>
                   </div>
@@ -2185,7 +2217,7 @@ const JuiciosPage = () => {
                   <div style={styles.pagination}>
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
+                      disabled={currentPage <= 1}
                       style={styles.paginationButton}
                     >
                       Anterior
@@ -2193,7 +2225,7 @@ const JuiciosPage = () => {
                     {renderPaginationButtons()}
                     <button
                       onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
+                      disabled={currentPage >= totalPages}
                       style={styles.paginationButton}
                     >
                       Siguiente
@@ -2496,7 +2528,7 @@ const JuiciosPage = () => {
                       </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
                         <input
                           type="checkbox"
                           checked={reportConfig.incluirGraficos}
@@ -2504,7 +2536,7 @@ const JuiciosPage = () => {
                         />
                         <PieChart size={16} /> Incluir gráficos de análisis
                       </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
                         <input
                           type="checkbox"
                           checked={reportConfig.incluirResumen}
