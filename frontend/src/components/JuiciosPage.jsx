@@ -1134,13 +1134,14 @@ const JuiciosPage = () => {
 
   // Apply filters and sorting to results
   const applyFiltersAndSort = useCallback((data) => {
-    if (!data || !data.resultados) {
+    let resultados = Array.isArray(data) ? data : data?.resultados;
+    if (!resultados) {
       setFilteredResults([]);
       return;
     }
 
     let allJuicios = [];
-    data.resultados.forEach(ficha => {
+    resultados.forEach(ficha => {
       if (ficha.juicios) {
         ficha.juicios.forEach(juicio => {
           allJuicios.push({
@@ -1681,8 +1682,8 @@ const JuiciosPage = () => {
                       </label>
                       <input
                         type="text"
-                        value={filters.fichas}
-                        onChange={(e) => handleFilterChange('fichas', e.target.value)}
+                        value={filters.ficha}
+                        onChange={(e) => handleFilterChange('ficha', e.target.value)}
                         placeholder="Ej: 23492,25958 (separadas por coma)"
                         style={styles.input}
                         onKeyPress={(e) => e.key === 'Enter' && buscarJuicios()}
