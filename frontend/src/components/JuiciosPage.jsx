@@ -1881,359 +1881,157 @@ const JuiciosPage = () => {
                 </div>
               </div>
 
-              {/* Solo una vez el resumen de resultados */}
-              {filteredResults.length > 0 && (
+              {/* Mostrar lista de personas si hay más de una */}
+              {filteredResults.length > 0 && personas.length > 1 && (
                 <div style={styles.card}>
-                  <div style={{ ...styles.cardHeader, background: 'linear-gradient(90deg, #059669, #047857)' }}>
+                  <div style={{ ...styles.cardHeader, background: 'linear-gradient(90deg, #6366F1, #4F46E5)' }}>
                     <h3 style={styles.cardHeaderTitle}>
-                      <BarChart3 /> Resumen de Resultados
+                      <User /> Selecciona una persona para ver sus resultados
                     </h3>
                   </div>
                   <div style={styles.cardContent}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                      <div style={{ padding: '16px', backgroundColor: '#ECFDF5', borderRadius: '8px' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#065F46' }}>{filteredResults.length}</div>
-                        <div style={{ fontSize: '14px', color: '#374151' }}>Resultados encontrados</div>
-                      </div>
-                      <div style={{ padding: '16px', backgroundColor: '#E0F2FE', borderRadius: '8px' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E40AF' }}>
-                          {filteredResults.filter(j => j.aprobado === true).length}
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                      {personas.map(nombre => (
+                        <li key={nombre} style={{ marginBottom: '12px' }}>
+                          <button
+                            style={{
+                              ...styles.buttonPrimary,
+                              backgroundColor: selectedPerson === nombre ? '#6366F1' : '#F97316',
+                              width: '100%',
+                              justifyContent: 'flex-start'
+                            }}
+                            onClick={() => setSelectedPerson(nombre)}
+                          >
+                            <UserCircle size={20} />
+                            <span>{nombre}</span>
+                            <span style={{ marginLeft: 'auto', color: '#6B7280', fontWeight: 'bold' }}>
+                              {filteredResults.filter(j => j.nombre_completo === nombre).length} juicios
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Mostrar resumen y tabla solo si hay una persona seleccionada o solo una persona en resultados */}
+              {(personas.length === 1 || selectedPerson) && (
+                <>
+                  {/* Resumen de resultados solo para la persona seleccionada */}
+                  <div style={styles.card}>
+                    <div style={{ ...styles.cardHeader, background: 'linear-gradient(90deg, #059669, #047857)' }}>
+                      <h3 style={styles.cardHeaderTitle}>
+                        <BarChart3 /> Resumen de Resultados
+                      </h3>
+                    </div>
+                    <div style={styles.cardContent}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                        <div style={{ padding: '16px', backgroundColor: '#ECFDF5', borderRadius: '8px' }}>
+                          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#065F46' }}>
+                            {(selectedPerson ? juiciosPersona.length : filteredResults.length)}
+                          </div>
+                          <div style={{ fontSize: '14px', color: '#374151' }}>Resultados encontrados</div>
                         </div>
-                        <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Aprobados</div>
-                      </div>
-                      <div style={{ padding: '16px', backgroundColor: '#FEF2F2', borderRadius: '8px' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#991B1B' }}>
-                          {filteredResults.filter(j => j.aprobado === false).length}
+                        <div style={{ padding: '16px', backgroundColor: '#E0F2FE', borderRadius: '8px' }}>
+                          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E40AF' }}>
+                            {(selectedPerson ? juiciosPersona : filteredResults).filter(j => j.aprobado === true).length}
+                          </div>
+                          <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Aprobados</div>
                         </div>
-                        <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Reprobados</div>
-                      </div>
-                      <div style={{ padding: '16px', backgroundColor: '#FDE68A', borderRadius: '8px' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#92400E' }}>
-                          {filteredResults.filter(j => j.aprobado === null).length}
+                        <div style={{ padding: '16px', backgroundColor: '#FEF2F2', borderRadius: '8px' }}>
+                          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#991B1B' }}>
+                            {(selectedPerson ? juiciosPersona : filteredResults).filter(j => j.aprobado === false).length}
+                          </div>
+                          <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Reprobados</div>
                         </div>
-                        <div style={{ fontSize: '14px', color: '#374151' }}>Por Evaluar</div>
+                        <div style={{ padding: '16px', backgroundColor: '#FDE68A', borderRadius: '8px' }}>
+                          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#92400E' }}>
+                            {(selectedPerson ? juiciosPersona : filteredResults).filter(j => j.aprobado === null).length}
+                          </div>
+                          <div style={{ fontSize: '14px', color: '#374151' }}>Por Evaluar</div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Solo una vez la tabla de resultados */}
-              {filteredResults.length > 0 && (
-                <div style={styles.tableContainer}>
-                  <table style={styles.table}>
-                    <thead style={styles.tableHeader}>
-                      <tr>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('fecha_hora_juicio')}>
-                          Fecha <Clock size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('ficha')}>
-                          Ficha <IdCard size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('nombre_completo')}>
-                          Aprendiz <User size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('competencia')}>
-                          Competencia <List size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('juicio_evaluacion')}>
-                          Resultado <Gavel size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={styles.tableHeaderCell}>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currentItems.map((juicio, index) => (
-                        <tr key={index} style={styles.tableRow} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
-                          <td style={styles.tableCell}>{juicio.fecha_hora_juicio.slice(0, 10)}</td>
-                          <td style={styles.tableCell}>{juicio.ficha}</td>
-                          <td style={styles.tableCell}>{juicio.nombre_completo}</td>
-                          <td style={styles.tableCell}>
-                            <div style={{ maxWidth: '300px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                              {juicio.competencia}
-                            </div>
-                          </td>
-                          <td style={styles.tableCell}>
-                            <div style={{ ...styles.badge, ...(juicio.aprobado ? styles.badgeSuccess : styles.badgeError) }}>
-                              {juicio.juicio_evaluacion}
-                            </div>
-                          </td>
-                          <td style={styles.tableCell}>
-                            <button
-                              onClick={() => openModal(juicio)}
-                              style={{ ...styles.buttonPrimary, padding: '8px 16px' }}
-                            >
-                              <Eye size={16} />
-                              <span>Ver</span>
-                            </button>
-                          </td>
+                  {/* Tabla de resultados solo para la persona seleccionada */}
+                  <div style={styles.tableContainer}>
+                    <table style={styles.table}>
+                      <thead style={styles.tableHeader}>
+                        <tr>
+                          <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('fecha_hora_juicio')}>
+                            Fecha <Clock size={14} style={{ display: 'inline' }} />
+                          </th>
+                          <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('ficha')}>
+                            Ficha <IdCard size={14} style={{ display: 'inline' }} />
+                          </th>
+                          <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('nombre_completo')}>
+                            Aprendiz <User size={14} style={{ display: 'inline' }} />
+                          </th>
+                          <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('competencia')}>
+                            Competencia <List size={14} style={{ display: 'inline' }} />
+                          </th>
+                          <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('juicio_evaluacion')}>
+                            Resultado <Gavel size={14} style={{ display: 'inline' }} />
+                          </th>
+                          <th style={styles.tableHeaderCell}>Acciones</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {/* Pagination */}
-                  <div style={styles.pagination}>
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage <= 1}
-                      style={styles.paginationButton}
-                    >
-                      Anterior
-                    </button>
-                    {renderPaginationButtons()}
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage >= totalPages}
-                      style={styles.paginationButton}
-                    >
-                      Siguiente
-                    </button>
+                      </thead>
+                      <tbody>
+                        {(selectedPerson ? juiciosPersona : currentItems).map((juicio, index) => (
+                          <tr key={index} style={styles.tableRow} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
+                            <td style={styles.tableCell}>{juicio.fecha_hora_juicio?.slice(0, 10)}</td>
+                            <td style={styles.tableCell}>{juicio.ficha}</td>
+                            <td style={styles.tableCell}>{juicio.nombre_completo}</td>
+                            <td style={styles.tableCell}>
+                              <div style={{ maxWidth: '300px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                {juicio.competencia}
+                              </div>
+                            </td>
+                            <td style={styles.tableCell}>
+                              <div style={{ ...styles.badge, ...(juicio.aprobado === true ? styles.badgeSuccess : juicio.aprobado === false ? styles.badgeError : styles.badgeWarning) }}>
+                                {juicio.juicio_evaluacion}
+                              </div>
+                            </td>
+                            <td style={styles.tableCell}>
+                              <button
+                                onClick={() => openModal(juicio)}
+                                style={{ ...styles.buttonPrimary, padding: '8px 16px' }}
+                              >
+                                <Eye size={16} />
+                                <span>Ver</span>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {/* Pagination solo si no hay persona seleccionada */}
+                    {!selectedPerson && (
+                      <div style={styles.pagination}>
+                        <button
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage <= 1}
+                          style={styles.paginationButton}
+                        >
+                          Anterior
+                        </button>
+                        {renderPaginationButtons()}
+                        <button
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage >= totalPages}
+                          style={styles.paginationButton}
+                        >
+                          Siguiente
+                        </button>
+                      </div>
+                    )}
                   </div>
-                </div>
+                </>
               )}
 
-              {/* Justo antes del bloque de Results Summary y Results Table, agrega un log para depuración */}
-              {console.log('filteredResults:', filteredResults)}
-              {console.log('consultaResults:', consultaResults)}
-
-              {filteredResults.length === 0 && consultaResults && (
-                <div style={{ color: 'red', marginBottom: '16px' }}>
-                  <strong>Depuración:</strong> No se encontraron juicios para mostrar. Revisa la estructura de los datos recibidos.
-                </div>
-              )}
-
-              {/* Results Summary */}
-              {filteredResults.length > 0 && (
-                <div style={styles.card}>
-                  <div style={{ ...styles.cardHeader, background: 'linear-gradient(90deg, #059669, #047857)' }}>
-                    <h3 style={styles.cardHeaderTitle}>
-                      <BarChart3 /> Resumen de Resultados
-                    </h3>
-                  </div>
-                  <div style={styles.cardContent}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                      <div style={{ padding: '16px', backgroundColor: '#ECFDF5', borderRadius: '8px' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#065F46' }}>{filteredResults.length}</div>
-                        <div style={{ fontSize: '14px', color: '#374151' }}>Resultados encontrados</div>
-                      </div>
-                      <div style={{ padding: '16px', backgroundColor: '#E0F2FE', borderRadius: '8px' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E40AF' }}>
-                          {filteredResults.filter(j => j.aprobado === true).length}
-                        </div>
-                        <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Aprobados</div>
-                      </div>
-                      <div style={{ padding: '16px', backgroundColor: '#FEF2F2', borderRadius: '8px' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#991B1B' }}>
-                          {filteredResults.filter(j => j.aprobado === false).length}
-                        </div>
-                        <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Reprobados</div>
-                      </div>
-                      <div style={{ padding: '16px', backgroundColor: '#FDE68A', borderRadius: '8px' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#92400E' }}>
-                          {filteredResults.filter(j => j.aprobado === null).length}
-                        </div>
-                        <div style={{ fontSize: '14px', color: '#374151' }}>Por Evaluar</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Results Table */}
-              {filteredResults.length > 0 && (
-                <div style={styles.tableContainer}>
-                  <table style={styles.table}>
-                    <thead style={styles.tableHeader}>
-                      <tr>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('fecha_hora_juicio')}>
-                          Fecha <Clock size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('ficha')}>
-                          Ficha <IdCard size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('nombre_completo')}>
-                          Aprendiz <User size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('competencia')}>
-                          Competencia <List size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('juicio_evaluacion')}>
-                          Resultado <Gavel size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={styles.tableHeaderCell}>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currentItems.map((juicio, index) => (
-                        <tr key={index} style={styles.tableRow} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
-                          <td style={styles.tableCell}>{juicio.fecha_hora_juicio.slice(0, 10)}</td>
-                          <td style={styles.tableCell}>{juicio.ficha}</td>
-                          <td style={styles.tableCell}>{juicio.nombre_completo}</td>
-                          <td style={styles.tableCell}>
-                            <div style={{ maxWidth: '300px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                              {juicio.competencia}
-                            </div>
-                          </td>
-                          <td style={styles.tableCell}>
-                            <div style={{ ...styles.badge, ...(juicio.aprobado ? styles.badgeSuccess : styles.badgeError) }}>
-                              {juicio.juicio_evaluacion}
-                            </div>
-                          </td>
-                          <td style={styles.tableCell}>
-                            <button
-                              onClick={() => openModal(juicio)}
-                              style={{ ...styles.buttonPrimary, padding: '8px 16px' }}
-                            >
-                              <Eye size={16} />
-                              <span>Ver</span>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {/* Pagination */}
-                  <div style={styles.pagination}>
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage <= 1}
-                      style={styles.paginationButton}
-                    >
-                      Anterior
-                    </button>
-                    {renderPaginationButtons()}
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage >= totalPages}
-                      style={styles.paginationButton}
-                    >
-                      Siguiente
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Justo antes del bloque de Results Summary y Results Table, agrega un log para depuración */}
-              {console.log('filteredResults:', filteredResults)}
-              {console.log('consultaResults:', consultaResults)}
-
-              {filteredResults.length === 0 && consultaResults && (
-                <div style={{ color: 'red', marginBottom: '16px' }}>
-                  <strong>Depuración:</strong> No se encontraron juicios para mostrar. Revisa la estructura de los datos recibidos.
-                </div>
-              )}
-
-              {/* Results Summary */}
-              {filteredResults.length > 0 && (
-                <div style={styles.card}>
-                  <div style={{ ...styles.cardHeader, background: 'linear-gradient(90deg, #059669, #047857)' }}>
-                    <h3 style={styles.cardHeaderTitle}>
-                      <BarChart3 /> Resumen de Resultados
-                    </h3>
-                  </div>
-                  <div style={styles.cardContent}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                      <div style={{ padding: '16px', backgroundColor: '#ECFDF5', borderRadius: '8px' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#065F46' }}>{filteredResults.length}</div>
-                        <div style={{ fontSize: '14px', color: '#374151' }}>Resultados encontrados</div>
-                      </div>
-                      <div style={{ padding: '16px', backgroundColor: '#E0F2FE', borderRadius: '8px' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E40AF' }}>
-                          {filteredResults.filter(j => j.aprobado === true).length}
-                        </div>
-                        <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Aprobados</div>
-                      </div>
-                      <div style={{ padding: '16px', backgroundColor: '#FEF2F2', borderRadius: '8px' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#991B1B' }}>
-                          {filteredResults.filter(j => j.aprobado === false).length}
-                        </div>
-                        <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Reprobados</div>
-                      </div>
-                      <div style={{ padding: '16px', backgroundColor: '#FDE68A', borderRadius: '8px' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#92400E' }}>
-                          {filteredResults.filter(j => j.aprobado === null).length}
-                        </div>
-                        <div style={{ fontSize: '14px', color: '#374151' }}>Por Evaluar</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Results Table */}
-              {filteredResults.length > 0 && (
-                <div style={styles.tableContainer}>
-                  <table style={styles.table}>
-                    <thead style={styles.tableHeader}>
-                      <tr>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('fecha_hora_juicio')}>
-                          Fecha <Clock size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('ficha')}>
-                          Ficha <IdCard size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('nombre_completo')}>
-                          Aprendiz <User size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('competencia')}>
-                          Competencia <List size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('juicio_evaluacion')}>
-                          Resultado <Gavel size={14} style={{ display: 'inline' }} />
-                        </th>
-                        <th style={styles.tableHeaderCell}>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currentItems.map((juicio, index) => (
-                        <tr key={index} style={styles.tableRow} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
-                          <td style={styles.tableCell}>{juicio.fecha_hora_juicio.slice(0, 10)}</td>
-                          <td style={styles.tableCell}>{juicio.ficha}</td>
-                          <td style={styles.tableCell}>{juicio.nombre_completo}</td>
-                          <td style={styles.tableCell}>
-                            <div style={{ maxWidth: '300px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                              {juicio.competencia}
-                            </div>
-                          </td>
-                          <td style={styles.tableCell}>
-                            <div style={{ ...styles.badge, ...(juicio.aprobado ? styles.badgeSuccess : styles.badgeError) }}>
-                              {juicio.juicio_evaluacion}
-                            </div>
-                          </td>
-                          <td style={styles.tableCell}>
-                            <button
-                              onClick={() => openModal(juicio)}
-                              style={{ ...styles.buttonPrimary, padding: '8px 16px' }}
-                            >
-                              <Eye size={16} />
-                              <span>Ver</span>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {/* Pagination */}
-                  <div style={styles.pagination}>
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage <= 1}
-                      style={styles.paginationButton}
-                    >
-                      Anterior
-                    </button>
-                    {renderPaginationButtons()}
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage >= totalPages}
-                      style={styles.paginationButton}
-                    >
-                      Siguiente
-                    </button>
-                  </div>
-                </div>
-              )}
-
+              {/* Mensaje si no hay resultados */}
               {filteredResults.length === 0 && consultaResults && (
                 <div style={{ color: 'red', marginBottom: '16px' }}>
                   <strong>Depuración:</strong> No se encontraron juicios para mostrar. Revisa la estructura de los datos recibidos.
