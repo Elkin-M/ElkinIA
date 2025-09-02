@@ -759,7 +759,7 @@ const JuiciosPage = () => {
   
   // Enhanced filters state
   const [filters, setFilters] = useState({
-    fichas: '',
+    ficha: '',
     aprendiz: '',
     competencia: '',
     juicio: '',
@@ -1003,11 +1003,11 @@ const JuiciosPage = () => {
 
   // Enhanced search juicios with sorting and filtering
   const buscarJuicios = async () => {
-    const { fichas, aprendiz, competencia, juicio, fechaInicio, fechaFin, instructor } = filters;
+    const { ficha, aprendiz, competencia, juicio, fechaInicio, fechaFin, instructor } = filters;
     const params = new URLSearchParams();
 
-    if (fichas) {
-      fichas.split(',').forEach(f => {
+    if (ficha) {
+      ficha.split(',').forEach(f => {
         if (f.trim()) params.append('fichas', f.trim());
       });
     }
@@ -1204,7 +1204,7 @@ const JuiciosPage = () => {
   // Clear filters
   const limpiarFiltros = () => {
     setFilters({
-      fichas: '',
+      ficha: '',
       aprendiz: '',
       competencia: '',
       juicio: '',
