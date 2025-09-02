@@ -4,6 +4,9 @@ import pandas as pd
 from typing import Optional, Dict, Any
 from datetime import datetime
 import logging
+from fastapi.responses import FileResponse
+import tempfile
+import os
 
 # Importar lógica
 from backend.juicio_logic import procesar_df_juicios
@@ -163,3 +166,71 @@ def resumen_estadisticas() -> Dict[str, Any]:
             "success": False,
             "error": str(e)
         }
+
+
+# ==============================
+# Endpoint: Generar reportes
+# ==============================
+@router.get("/reportes/generar")
+def generar_reporte(
+    fecha_inicio: Optional[str] = Query(None),
+    fecha_fin: Optional[str] = Query(None),
+    formato: str = Query("excel"),
+    tipo: str = Query("completo"),
+    incluir_graficos: Optional[str] = Query("false"),
+    incluir_resumen: Optional[str] = Query("false"),
+):
+    """
+    Genera un reporte filtrado y lo retorna como archivo descargable.
+    """
+    archivos = list(REPORTES_FOLDER.glob("*.xls"))
+    df_total = []
+    for archivo_path in archivos:
+        try:
+            df = cargar_excel_limpio(archivo_path)
+            # Filtrar por fecha si aplica
+            if fecha_inicio and "fecha_juicio" in df.columns:
+                df = df[
+                    pd.to_datetime(df["fecha_juicio"], errors="coerce") >= pd.to_datetime(fecha_inicio)
+                ]
+            if fecha_fin and "fecha_juicio" in df.columns:
+                df = df[
+                    pd.to_datetime(df["fecha_juicio"], errors="coerce") <= pd.to_datetime(fecha_fin)
+                ]
+            df_total.append(df)
+        except Exception as e:
+            logger.error(f"Error procesando {archivo_path.name}: {e}")
+            continue
+
+    if not df_total:
+        raise Exception("No hay datos para generar el reporte.")
+
+    df_final = pd.concat(df_total, ignore_index=True)
+
+    # Si tipo es resumen, solo deja algunas columnas
+    if tipo == "resumen":
+        cols = [c for c in df_final.columns if c in ["nombre", "centro_formacion", "juicio_evaluacion", "fecha_juicio"]]
+        df_final = df_final[cols]
+    elif tipo == "programas":
+        cols = [c for c in df_final.columns if c in ["nombre", "programa", "centro_formacion", "juicio_evaluacion", "fecha_juicio"]]
+        df_final = df_final[cols]
+    # Si tipo es completo, deja todo
+
+    # Genera archivo temporal
+    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{formato if formato != 'excel' else 'xlsx'}") as tmp:
+        filename = tmp.name
+        if formato == "excel":
+            df_final.to_excel(filename, index=False)
+        elif formato == "csv":
+            df_final.to_csv(filename, index=False)
+        elif formato == "pdf":
+            # PDF requiere librerías extra, aquí solo exporta CSV y lo renombra
+            df_final.to_csv(filename, index=False)
+        else:
+            df_final.to_excel(filename, index=False)
+
+    # Nombre sugerido para descarga
+    download_name = f"reporte_{tipo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{formato if formato != 'excel' else 'xlsx'}"
+    headers = {"Content-Disposition": f'attachment; filename="{download_name}"'}
+
+    return FileResponse(filename, headers=headers, media_type="application/octet-stream")
