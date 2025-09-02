@@ -272,6 +272,28 @@ def _esperar_descarga_completa(download_dir: str, archivos_anteriores: set, time
     logger.error("⏰ Timeout esperando descarga")
     return None
 
+def procesar_df_juicios(df: pd.DataFrame) -> pd.DataFrame:
+    """Normaliza y estandariza los nombres de las columnas de un DataFrame de juicios."""
+    df.columns = df.columns.str.lower().str.strip().str.replace(" ", "_")
+
+    mapeo_columnas = {
+        "nombre_completo_del_aprendiz": "nombre_aprendiz",
+        "centro_de_formacion": "centro_formacion",
+        "regional": "regional",
+        "juicio_de_evaluacion": "juicio_evaluacion",
+        "estado": "estado",
+        "jornada": "jornada",
+        "fecha_de_juicio": "fecha_juicio",
+        "nombre_aprendiz": "nombre_aprendiz",  # por si ya viene correcto
+        "aprendiz": "nombre_aprendiz",
+        "ficha": "ficha"
+    }
+
+    renombrar = {col: mapeo_columnas[col] for col in df.columns if col in mapeo_columnas}
+    df.rename(columns=renombrar, inplace=True)
+
+    return df
+
 def _verificar_archivo_completo(archivo_path: str, max_intentos: int = 5) -> bool:
     """Verifica que un archivo esté completamente descargado"""
     for _ in range(max_intentos):

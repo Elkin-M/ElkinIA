@@ -1,96 +1,165 @@
-from fastapi import APIRouter, Query, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse
-from typing import Optional, List, Dict, Any
-import pandas as pd
-import os
+from fastapi import APIRouter, Query
 from pathlib import Path
+import pandas as pd
+from typing import Optional, Dict, Any
 from datetime import datetime
-import json
 import logging
 
-# Configuración
-REPORTES_FOLDER = Path("reportes_juicios")
-logger = logging.getLogger(__name__)
+# Importar lógica
+from backend.juicio_logic import procesar_df_juicios
 
-# Crear la instancia del router
 router = APIRouter()
 
-# 📌 Endpoints de Consulta de Datos
+# Configurar logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-@router.get("/juicios/fichas-disponibles", summary="Obtener Fichas Disponibles")
-def obtener_fichas_disponibles():
-    """Obtiene una lista de fichas con archivos de reporte disponibles."""
-    if not REPORTES_FOLDER.exists():
-        return []
-    archivos = [archivo.stem for archivo in REPORTES_FOLDER.glob("*.xls")]
-    return sorted(archivos)
+# Carpeta donde están los reportes
+REPORTES_FOLDER = Path("reportes_juicios")
 
-@router.get("/juicios/{ficha}", summary="Obtener Juicios por Ficha")
-def obtener_juicios_por_ficha(ficha: str):
-    """
-    Obtiene todos los juicios para una ficha específica leyendo el archivo de reporte.
-    """
-    archivo_path = REPORTES_FOLDER / f"{ficha}.xls"
-    if not archivo_path.exists():
-        raise HTTPException(status_code=404, detail=f"Archivo para ficha {ficha} no encontrado")
 
-    try:
-        df = pd.read_excel(archivo_path)
-        data = df.to_dict(orient="records")
-        return {
-            "success": True,
-            "info_programa": {"denominacion": "N/A", "centro_formacion": "N/A"},
-            "juicios": data,
-        }
-    except Exception as e:
-        logger.error(f"Error leyendo archivo de Excel: {e}")
-        raise HTTPException(status_code=500, detail=f"Error al procesar el archivo: {str(e)}")
+# ==============================
+# Función para limpiar y cargar Excel
+# ==============================
+def cargar_excel_limpio(path: Path) -> pd.DataFrame:
+    df_raw = pd.read_excel(path, header=None)
 
-@router.get("/juicios/estadisticas/resumen", summary="Obtener Estadísticas")
-def obtener_estadisticas_resumen():
-    """Calcula y devuelve estadísticas resumidas de todos los juicios."""
+    fila_inicio = df_raw.index[df_raw.iloc[:, 0] == "Tipo de Documento"].tolist()
+    if not fila_inicio:
+        raise ValueError(f"No se encontró encabezado válido en {path.name}")
+    fila_inicio = fila_inicio[0]
+
+    df = pd.read_excel(path, header=fila_inicio)
+    df = procesar_df_juicios(df)
+    df = df.where(pd.notna(df), None)
+
+    # 👇 Aquí para ver qué columnas trae el archivo ya procesado
+    print("📌 Columnas después de procesar:", df.columns.tolist())
+
+    return df
+
+
+# ==============================
+# Endpoint: Buscar juicios por filtros
+# ==============================
+@router.get("/juicios")
+def buscar_juicios(
+    aprendiz: Optional[str] = Query(None),
+    regional: Optional[str] = Query(None),
+    centro: Optional[str] = Query(None),
+    jornada: Optional[str] = Query(None),
+    fecha: Optional[str] = Query(None),
+) -> Dict[str, Any]:
+    logger.info(f"🔎 Búsqueda de juicios en: {REPORTES_FOLDER.resolve()}")
+    archivos = list(REPORTES_FOLDER.glob("*.xls"))
+    resultados = []
+    archivos_procesados = 0
+
+    for archivo_path in archivos:
+        try:
+            df = cargar_excel_limpio(archivo_path)
+
+            # Aplicar filtros dinámicos
+            if aprendiz and "nombre" in df.columns:
+                df = df[df["nombre"].str.contains(aprendiz, case=False, na=False)]
+            if regional and "regional" in df.columns:
+                df = df[df["regional"].str.contains(regional, case=False, na=False)]
+            if centro and "centro_formacion" in df.columns:
+                df = df[df["centro_formacion"].str.contains(centro, case=False, na=False)]
+            if jornada and "jornada" in df.columns:
+                df = df[df["jornada"].str.contains(jornada, case=False, na=False)]
+            if fecha and "fecha_juicio" in df.columns:
+                df["fecha_juicio_str"] = pd.to_datetime(
+                    df["fecha_juicio"], errors="coerce"
+                ).dt.strftime("%Y-%m-%d")
+                df = df[df["fecha_juicio_str"] == fecha]
+
+            if not df.empty:
+                df = df.where(pd.notna(df), None)  # NaN -> None
+                for col in df.select_dtypes(include=["datetime64[ns]"]).columns:
+                    df[col] = df[col].dt.strftime("%Y-%m-%d")  # fechas -> string
+                resultados.extend(df.to_dict(orient="records"))
+
+
+            archivos_procesados += 1
+        except Exception as e:
+            logger.error(f"❌ Error procesando {archivo_path.name}: {e}")
+            continue
+
+    return {
+        "success": True,
+        "query": {
+            "aprendiz": aprendiz,
+            "regional": regional,
+            "centro": centro,
+            "jornada": jornada,
+            "fecha": fecha,
+        },
+        "archivos_procesados": archivos_procesados,
+        "juicios_encontrados": len(resultados),
+        "resultados": resultados,
+    }
+
+
+# ==============================
+# Endpoint: Resumen estadístico
+# ==============================
+@router.get("/juicios/estadisticas/resumen")
+def resumen_estadisticas() -> Dict[str, Any]:
+    logger.info(f"📂 Buscando archivos en: {REPORTES_FOLDER.resolve()}")
+    archivos = list(REPORTES_FOLDER.glob("*.xls"))
+
+    logger.info(f"📑 Archivos encontrados: {[a.name for a in archivos]}")
+
     estadisticas_globales = {
         "fichas_analizadas": 0,
         "total_juicios": 0,
         "aprobados": 0,
         "reprobados": 0,
         "programas": {},
-        "centros": set()
+        "centros": []
     }
 
     try:
-        archivos = list(REPORTES_FOLDER.glob("*.xls*"))
-        estadisticas_globales["fichas_analizadas"] = len(archivos)
-
         for archivo in archivos:
             try:
-                df = pd.read_excel(archivo)
-                datos = {
-                    "juicios": df.to_dict(orient="records"),
-                    "info_programa": {"denominacion": "N/A", "centro_formacion": "N/A"}
-                }
-                
-                # Contar juicios
-                estadisticas_globales["total_juicios"] += len(datos["juicios"])
-                
+                logger.info(f"➡ Procesando archivo: {archivo.name}")
+                df = cargar_excel_limpio(archivo)
+
+                estadisticas_globales["fichas_analizadas"] += 1
+                estadisticas_globales["total_juicios"] += len(df)
+
                 # Contar aprobados/reprobados
-                for juicio in datos["juicios"]:
-                    if juicio["aprobado"]:
-                        estadisticas_globales["aprobados"] += 1
-                    elif "REPROBADO" in juicio.get('juicio_evaluacion', '').upper():
-                        estadisticas_globales["reprobados"] += 1
+                if "juicio_evaluacion" in df.columns:
+                    for estado, cantidad in df["juicio_evaluacion"].value_counts().items():
+                        if isinstance(estado, str):
+                            estado = estado.strip().upper()
+                            if estado == "APROBADO":
+                                estadisticas_globales["aprobados"] += int(cantidad)
+                            elif estado == "REPROBADO":
+                                estadisticas_globales["reprobados"] += int(cantidad)
+
+                # Centros
+                if "centro_formacion" in df.columns:
+                    centros_validos = [c for c in df["centro_formacion"].unique() if c]
+                    estadisticas_globales["centros"].extend(centros_validos)
 
             except Exception as e:
-                logger.error(f"Error procesando estadísticas de archivo {archivo.name}: {e}")
+                logger.error(f"❌ Error procesando {archivo.name}: {e}")
                 continue
-        
-        estadisticas_globales["centros"] = list(estadisticas_globales["centros"])
-        
+
+        # Eliminar duplicados en centros
+        estadisticas_globales["centros"] = list(set(estadisticas_globales["centros"]))
+
         return {
             "success": True,
             "timestamp": datetime.now().isoformat(),
             "estadisticas": estadisticas_globales
         }
-        
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al generar estadísticas: {str(e)}")
+        logger.error(f"⚠️ Error general en resumen_estadisticas: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
