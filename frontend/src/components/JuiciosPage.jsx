@@ -1148,18 +1148,35 @@ const JuiciosPage = () => {
     }
 
     let allJuicios = [];
-    resultados.forEach(ficha => {
-      if (ficha.juicios) {
-        ficha.juicios.forEach(juicio => {
-          allJuicios.push({
-            ...juicio,
-            ficha: ficha.ficha,
-            programa: ficha.info_programa?.denominacion || 'N/A',
-            centro: ficha.info_programa?.centro_formacion || 'N/A'
+    // Si los objetos no tienen 'juicios', entonces son los juicios planos del backend
+    if (resultados.length && !resultados[0].juicios) {
+      allJuicios = resultados.map(j => ({
+        nombre_completo: `${j.nombre || ''} ${j.apellidos || ''}`.trim(),
+        numero_documento: j["número_de_documento"],
+        competencia: j.competencia,
+        resultado_aprendizaje: j.resultado_de_aprendizaje,
+        juicio_evaluacion: j.juicio_de_evaluación,
+        aprobado: (j.juicio_de_evaluación || '').toUpperCase() === 'APROBADO',
+        fecha_hora_juicio: j.fecha_y_hora_del_juicio_evaluativo,
+        funcionario_registro: j.funcionario_que_registro_el_juicio_evaluativo,
+        ficha: j.ficha || '', // si tienes el número de ficha en el objeto
+        programa: j.programa || '',
+        centro: j.centro_formacion || ''
+      }));
+    } else {
+      resultados.forEach(ficha => {
+        if (ficha.juicios) {
+          ficha.juicios.forEach(juicio => {
+            allJuicios.push({
+              ...juicio,
+              ficha: ficha.ficha,
+              programa: ficha.info_programa?.denominacion || 'N/A',
+              centro: ficha.info_programa?.centro_formacion || 'N/A'
+            });
           });
-        });
-      }
-    });
+        }
+      });
+    }
 
     // Apply sorting
     allJuicios.sort((a, b) => {
@@ -1986,7 +2003,122 @@ const JuiciosPage = () => {
                         <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Aprobados</div>
                       </div>
                       <div style={{ padding: '16px', backgroundColor: '#FEF2F2', borderRadius: '8px' }}>
-                                               <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#991B1B' }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#991B1B' }}>
+                          {filteredResults.filter(j => !j.aprobado).length}
+                        </div>
+                        <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Reprobados</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Results Table */}
+              {filteredResults.length > 0 && (
+                <div style={styles.tableContainer}>
+                  <table style={styles.table}>
+                    <thead style={styles.tableHeader}>
+                      <tr>
+                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('fecha_hora_juicio')}>
+                          Fecha <Clock size={14} style={{ display: 'inline' }} />
+                        </th>
+                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('ficha')}>
+                          Ficha <IdCard size={14} style={{ display: 'inline' }} />
+                        </th>
+                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('nombre_completo')}>
+                          Aprendiz <User size={14} style={{ display: 'inline' }} />
+                        </th>
+                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('competencia')}>
+                          Competencia <List size={14} style={{ display: 'inline' }} />
+                        </th>
+                        <th style={{ ...styles.tableHeaderCell, cursor: 'pointer' }} onClick={() => setSortField('juicio_evaluacion')}>
+                          Resultado <Gavel size={14} style={{ display: 'inline' }} />
+                        </th>
+                        <th style={styles.tableHeaderCell}>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentItems.map((juicio, index) => (
+                        <tr key={index} style={styles.tableRow} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
+                          <td style={styles.tableCell}>{juicio.fecha_hora_juicio.slice(0, 10)}</td>
+                          <td style={styles.tableCell}>{juicio.ficha}</td>
+                          <td style={styles.tableCell}>{juicio.nombre_completo}</td>
+                          <td style={styles.tableCell}>
+                            <div style={{ maxWidth: '300px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                              {juicio.competencia}
+                            </div>
+                          </td>
+                          <td style={styles.tableCell}>
+                            <div style={{ ...styles.badge, ...(juicio.aprobado ? styles.badgeSuccess : styles.badgeError) }}>
+                              {juicio.juicio_evaluacion}
+                            </div>
+                          </td>
+                          <td style={styles.tableCell}>
+                            <button
+                              onClick={() => openModal(juicio)}
+                              style={{ ...styles.buttonPrimary, padding: '8px 16px' }}
+                            >
+                              <Eye size={16} />
+                              <span>Ver</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {/* Pagination */}
+                  <div style={styles.pagination}>
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      style={styles.paginationButton}
+                    >
+                      Anterior
+                    </button>
+                    {renderPaginationButtons()}
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      style={styles.paginationButton}
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Justo antes del bloque de Results Summary y Results Table, agrega un log para depuración */}
+              {console.log('filteredResults:', filteredResults)}
+              {console.log('consultaResults:', consultaResults)}
+
+              {filteredResults.length === 0 && consultaResults && (
+                <div style={{ color: 'red', marginBottom: '16px' }}>
+                  <strong>Depuración:</strong> No se encontraron juicios para mostrar. Revisa la estructura de los datos recibidos.
+                </div>
+              )}
+
+              {/* Results Summary */}
+              {filteredResults.length > 0 && (
+                <div style={styles.card}>
+                  <div style={{ ...styles.cardHeader, background: 'linear-gradient(90deg, #059669, #047857)' }}>
+                    <h3 style={styles.cardHeaderTitle}>
+                      <BarChart3 /> Resumen de Resultados
+                    </h3>
+                  </div>
+                  <div style={styles.cardContent}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                      <div style={{ padding: '16px', backgroundColor: '#ECFDF5', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#065F46' }}>{filteredResults.length}</div>
+                        <div style={{ fontSize: '14px', color: '#374151' }}>Resultados encontrados</div>
+                      </div>
+                      <div style={{ padding: '16px', backgroundColor: '#E0F2FE', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E40AF' }}>
+                          {filteredResults.filter(j => j.aprobado).length}
+                        </div>
+                        <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Aprobados</div>
+                      </div>
+                      <div style={{ padding: '16px', backgroundColor: '#FEF2F2', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#991B1B' }}>
                           {filteredResults.filter(j => !j.aprobado).length}
                         </div>
                         <div style={{ fontSize: '14px', color: '#374151' }}>Juicios Reprobados</div>
