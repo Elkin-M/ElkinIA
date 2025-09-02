@@ -1415,6 +1415,19 @@ const JuiciosPage = () => {
     }
   }, [currentSection, fichasManagement]);
 
+  // Agrega esto justo antes del return del componente JuiciosPage:
+  const [selectedPerson, setSelectedPerson] = useState(null);
+
+  // Agrupa los resultados por persona
+  const personas = Array.from(
+    new Set(filteredResults.map(j => j.nombre_completo))
+  );
+
+  // Filtra los juicios de la persona seleccionada
+  const juiciosPersona = selectedPerson
+    ? filteredResults.filter(j => j.nombre_completo === selectedPerson)
+    : [];
+
   return (
     <div style={styles.app}>
       {/* Navbar */}
@@ -1916,7 +1929,7 @@ const JuiciosPage = () => {
               )}
 
               {/* Mostrar resumen y tabla solo si hay una persona seleccionada o solo una persona en resultados */}
-              {(consultaResults.length === 1 || selectedPerson) && (
+              {(personas.length === 1 || selectedPerson) && (
                 <>
                   {/* Resumen de resultados solo para la persona seleccionada */}
                   <div style={styles.card}>
