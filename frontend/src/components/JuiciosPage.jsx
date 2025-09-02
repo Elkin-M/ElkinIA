@@ -1916,7 +1916,7 @@ const JuiciosPage = () => {
               )}
 
               {/* Mostrar resumen y tabla solo si hay una persona seleccionada o solo una persona en resultados */}
-              {(personas.length === 1 || selectedPerson) && (
+              {(consultaResults.length === 1 || selectedPerson) && (
                 <>
                   {/* Resumen de resultados solo para la persona seleccionada */}
                   <div style={styles.card}>
