@@ -1192,6 +1192,33 @@ const JuiciosPage = () => {
       });
     }
 
+    // Apply filters:
+    if (filters.ficha) {
+      allJuicios = allJuicios.filter(j => j.ficha === filters.ficha);
+    }
+    if (filters.aprendiz) {
+      allJuicios = allJuicios.filter(j => (j.nombre_completo || '').toLowerCase().includes(filters.aprendiz.toLowerCase()));
+    }
+    if (filters.cedula) {
+      allJuicios = allJuicios.filter(j => (j.numero_documento || '').includes(filters.cedula));
+    }
+    if (filters.regional) {
+      allJuicios = allJuicios.filter(j => j.regional === filters.regional);
+    }
+    if (filters.centro) {
+      allJuicios = allJuicios.filter(j => j.centro === filters.centro);
+    }
+    if (filters.instructor) {
+      allJuicios = allJuicios.filter(j => (j.funcionario_registro || '').toLowerCase() === filters.instructor.toLowerCase());
+    }
+    if (filters.juicio) {
+      if (filters.juicio === 'POR EVALUAR') {
+        allJuicios = allJuicios.filter(j => (j.juicio_evaluacion || '').toUpperCase() === 'POR EVALUAR');
+      } else {
+        allJuicios = allJuicios.filter(j => (j.juicio_evaluacion || '').toUpperCase() === filters.juicio);
+      }
+    }
+
     // Apply sorting
     allJuicios.sort((a, b) => {
       let aValue = a[sortField];
@@ -1208,7 +1235,7 @@ const JuiciosPage = () => {
     });
 
     setFilteredResults(allJuicios);
-  }, [sortField, sortOrder]);
+  }, [sortField, sortOrder, filters]);
 
   // Handle pagination
   const handlePageChange = (pageNumber) => {
@@ -1450,6 +1477,14 @@ const JuiciosPage = () => {
   const fichasDisponibles = Array.from(
     new Set(filteredResults.map(j => j.ficha).filter(Boolean))
   );
+
+  // Detecta regionales y centros únicos para los desplegables
+  const regionalesDisponibles = Array.from(
+    new Set(filteredResults.map(j => j.regional).filter(Boolean))
+  );
+  const centrosDisponibles = filters.regional
+    ? Array.from(new Set(filteredResults.filter(j => j.regional === filters.regional).map(j => j.centro).filter(Boolean)))
+    : [];
 
   return (
     <div style={styles.app}>
@@ -1780,22 +1815,54 @@ const JuiciosPage = () => {
                         onKeyPress={(e) => e.key === 'Enter' && buscarJuicios()}
                       />
                     </div>
-                    {/* Competencia: desplegable dinámico */}
+                    {/* Cédula */}
                     <div style={styles.inputGroup}>
                       <label style={styles.inputLabel}>
-                        <BadgeCheck size={16} /> Competencia
+                        <IdCard size={16} /> Número de Documento
+                      </label>
+                      <input
+                        type="text"
+                        value={filters.cedula || ''}
+                        onChange={(e) => handleFilterChange('cedula', e.target.value)}
+                        placeholder="Buscar por cédula"
+                        style={styles.input}
+                        onKeyPress={(e) => e.key === 'Enter' && buscarJuicios()}
+                      />
+                    </div>
+                    {/* Regional: desplegable dinámico */}
+                    <div style={styles.inputGroup}>
+                      <label style={styles.inputLabel}>
+                        <MapPin size={16} /> Regional
                       </label>
                       <select
-                        value={filters.competencia}
-                        onChange={(e) => handleFilterChange('competencia', e.target.value)}
+                        value={filters.regional}
+                        onChange={(e) => handleFilterChange('regional', e.target.value)}
                         style={styles.select}
                       >
-                        <option value="">Todas las competencias</option>
-                        {competenciasDisponibles.map(c => (
-                          <option key={c} value={c}>{c}</option>
+                        <option value="">Todas las regionales</option>
+                        {regionalesDisponibles.map(r => (
+                          <option key={r} value={r}>{r}</option>
                         ))}
                       </select>
                     </div>
+                    {/* Centro: solo si hay regional seleccionada */}
+                    {filters.regional && (
+                      <div style={styles.inputGroup}>
+                        <label style={styles.inputLabel}>
+                          <Building size={16} /> Centro
+                        </label>
+                        <select
+                          value={filters.centro}
+                          onChange={(e) => handleFilterChange('centro', e.target.value)}
+                          style={styles.select}
+                        >
+                          <option value="">Todos los centros</option>
+                          {centrosDisponibles.map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                     {/* Resultado */}
                     <div style={styles.inputGroup}>
                       <label style={styles.inputLabel}>
@@ -1924,12 +1991,6 @@ const JuiciosPage = () => {
                             </span>
                           </button>
                           {/* Info adicional del estudiante */}
-                          <div style={{ fontSize: '12px', color: '#374151', marginLeft: '32px', marginTop: '4px' }}>
-                            <strong>Documento:</strong> {infoPersonas[nombre]?.numero_documento || 'N/A'}<br />
-                            <strong>Ficha:</strong> {infoPersonas[nombre]?.ficha || 'N/A'}<br />
-                            <strong>Programa:</strong> {infoPersonas[nombre]?.programa || 'N/A'}<br />
-                            <strong>Centro:</strong> {infoPersonas[nombre]?.centro || 'N/A'}
-                          </div>
                         </li>
                       ))}
                     </ul>
