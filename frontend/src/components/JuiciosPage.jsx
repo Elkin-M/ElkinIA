@@ -1044,9 +1044,9 @@ const JuiciosPage = () => {
         throw new Error(data.detail || 'Error al consultar juicios');
       }
 
-      setConsultaResults(data);
+      setConsultaResults(data.resultados);
       calculateStats(data);
-      applyFiltersAndSort(data);
+      applyFiltersAndSort(data.resultados);
       showMessage(`Encontrados ${data.resultados?.length || 0} resultados`, 'success');
 
     } catch (error) {
