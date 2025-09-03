@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Search, Filter, Download, MapPin, Calendar, Building, Users, Play } from "lucide-react";
 import { styles, injectStyles } from './styles.js';
@@ -62,6 +62,28 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
     });
 
     const [municipiosDisponibles, setMunicipiosDisponibles] = useState([]);
+
+    // Efecto para obtener opciones de filtros desde el backend
+    useEffect(() => {
+        const fetchOpciones = async () => {
+            try {
+                const response = await axios.get("https://008df9c9dccd.ngrok-free.app/juicios/opciones-filtros");
+                const data = response.data;
+
+                // Suponiendo que el backend devuelve las opciones en el formato correcto
+                setMunicipiosDisponibles(data.municipios || []);
+                // Si también se necesitan departamentos y jornadas desde el backend, descomentar las siguientes líneas:
+                // setDepartamentos(data.departamentos || []);
+                // setJornadas(data.jornadas || []);
+            } catch (error) {
+                console.error("Error al obtener opciones de filtros:", error);
+                setMunicipiosDisponibles([]);
+                // Manejar el estado de error si es necesario
+            }
+        };
+
+        fetchOpciones();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
