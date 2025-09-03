@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Body
 from pathlib import Path
 import pandas as pd
 from typing import Optional, Dict, Any
@@ -171,7 +171,7 @@ def resumen_estadisticas() -> Dict[str, Any]:
 # ==============================
 # Endpoint: Generar reportes
 # ==============================
-@router.get("/reportes/generar")
+@router.get("/juicios/reportes/generar")
 def generar_reporte(
     fecha_inicio: Optional[str] = Query(None),
     fecha_fin: Optional[str] = Query(None),
@@ -234,3 +234,84 @@ def generar_reporte(
     headers = {"Content-Disposition": f'attachment; filename="{download_name}"'}
 
     return FileResponse(filename, headers=headers, media_type="application/octet-stream")
+
+
+# ==============================
+# Endpoint: Juicios filtrados (POST)
+# ==============================
+@router.post("/juicios-filtrados")
+def obtener_juicios_filtrados(filtros: Dict[str, Optional[str]] = Body(...)):
+    """
+    Recibe los filtros como payload y retorna los juicios filtrados.
+    """
+    archivos = list(REPORTES_FOLDER.glob("*.xls"))
+    resultados = []
+
+    aprendiz = filtros.get("aprendiz")
+    regional = filtros.get("regional")
+    centro = filtros.get("centro")
+    jornada = filtros.get("jornada")
+    fecha = filtros.get("fecha")
+
+    for archivo_path in archivos:
+        try:
+            df = cargar_excel_limpio(archivo_path)
+            if aprendiz and "nombre" in df.columns:
+                df = df[df["nombre"].str.contains(aprendiz, case=False, na=False)]
+            if regional and "regional" in df.columns:
+                df = df[df["regional"].str.contains(regional, case=False, na=False)]
+            if centro and "centro_formacion" in df.columns:
+                df = df[df["centro_formacion"].str.contains(centro, case=False, na=False)]
+            if jornada and "jornada" in df.columns:
+                df = df[df["jornada"].str.contains(jornada, case=False, na=False)]
+            if fecha and "fecha_juicio" in df.columns:
+                df["fecha_juicio_str"] = pd.to_datetime(
+                    df["fecha_juicio"], errors="coerce"
+                ).dt.strftime("%Y-%m-%d")
+                df = df[df["fecha_juicio_str"] == fecha]
+            if not df.empty:
+                df = df.where(pd.notna(df), None)
+                for col in df.select_dtypes(include=["datetime64[ns]"]).columns:
+                    df[col] = df[col].dt.strftime("%Y-%m-%d")
+                resultados.extend(df.to_dict(orient="records"))
+        except Exception as e:
+            logger.error(f"❌ Error procesando {archivo_path.name}: {e}")
+            continue
+
+    return {
+        "success": True,
+        "filtros": filtros,
+        "juicios_encontrados": len(resultados),
+        "resultados": resultados,
+    }
+
+
+# ==============================
+# Endpoint: Opciones para filtros (GET)
+# ==============================
+@router.get("/opciones-filtros")
+def obtener_opciones_filtros():
+    """
+    Devuelve listas únicas para los desplegables de regionales, centros y jornadas.
+    """
+    archivos = list(REPORTES_FOLDER.glob("*.xls"))
+    regionales = set()
+    centros = set()
+    jornadas = set()
+    for archivo_path in archivos:
+        try:
+            df = cargar_excel_limpio(archivo_path)
+            if "regional" in df.columns:
+                regionales.update(df["regional"].dropna().unique())
+            if "centro_formacion" in df.columns:
+                centros.update(df["centro_formacion"].dropna().unique())
+            if "jornada" in df.columns:
+                jornadas.update(df["jornada"].dropna().unique())
+        except Exception as e:
+            logger.error(f"Error obteniendo opciones: {e}")
+            continue
+    return {
+        "regionales": sorted(regionales),
+        "centros": sorted(centros),
+        "jornadas": sorted(jornadas),
+    }
