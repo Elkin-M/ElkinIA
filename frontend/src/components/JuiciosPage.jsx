@@ -1521,6 +1521,11 @@ const JuiciosPage = () => {
     ? Array.from(new Set(filteredResults.filter(j => j.regional === filters.regional).map(j => j.centro).filter(Boolean)))
     : [];
 
+  // Agrega esta línea justo antes del return del componente JuiciosPage:
+  const juiciosPersona = selectedPerson
+    ? filteredResults.filter(j => j.nombre_completo === selectedPerson)
+    : filteredResults;
+
   return (
     <div style={styles.app}>
       {/* Navbar */}
