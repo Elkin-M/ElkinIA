@@ -816,7 +816,7 @@ const JuiciosPage = () => {
     respaldos: 'activos'
   });
   
-  const API_BASE = 'https://008df9c9dccd.ngrok-free.app/juicios';
+  const API_BASE = 'https://74f4df648a8f.ngrok-free.app/juicios';
   
   // Navigation items
   const navItems = [

@@ -67,7 +67,7 @@ function HomeForm({ onSubmit, loading, statusMessage, progress }) {
     useEffect(() => {
         const fetchOpciones = async () => {
             try {
-                const response = await axios.get("https://008df9c9dccd.ngrok-free.app/juicios/opciones-filtros");
+                const response = await axios.get("https://74f4df648a8f.ngrok-free.app/juicios/opciones-filtros");
                 const data = response.data;
 
                 // Suponiendo que el backend devuelve las opciones en el formato correcto
