@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Body
 from pathlib import Path
 import pandas as pd
 from typing import Optional, Dict, Any
@@ -7,6 +7,7 @@ import logging
 from fastapi.responses import FileResponse
 import tempfile
 import os
+from io import BytesIO
 
 # Importar lógica
 from backend.juicio_logic import procesar_df_juicios
@@ -19,6 +20,14 @@ logger = logging.getLogger(__name__)
 
 # Carpeta donde están los reportes
 REPORTES_FOLDER = Path("reportes_juicios")
+
+
+try:
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    REPORTLAB_AVAILABLE = False
 
 
 # ==============================
@@ -171,7 +180,7 @@ def resumen_estadisticas() -> Dict[str, Any]:
 # ==============================
 # Endpoint: Generar reportes
 # ==============================
-@router.get("/reportes/generar")
+@router.get("/juicios/reportes/generar")
 def generar_reporte(
     fecha_inicio: Optional[str] = Query(None),
     fecha_fin: Optional[str] = Query(None),
@@ -179,16 +188,27 @@ def generar_reporte(
     tipo: str = Query("completo"),
     incluir_graficos: Optional[str] = Query("false"),
     incluir_resumen: Optional[str] = Query("false"),
+    fichas: Optional[str] = Query(None),
+    centro: Optional[str] = Query(None),
+    municipio: Optional[str] = Query(None),
+    estudiante: Optional[str] = Query(None),  # nombre o cédula
+    competencia: Optional[str] = Query(None),
+    estado: Optional[str] = Query(None),      # APROBADO, REPROBADO, POR EVALUAR
+    compacto: Optional[str] = Query("false"), # "true" para resumen compacto
 ):
     """
     Genera un reporte filtrado y lo retorna como archivo descargable.
+    Permite filtrar por fichas, centro, municipio, estudiante, competencia, estado.
+    Si compacto=true, genera resumen por estudiante.
     """
     archivos = list(REPORTES_FOLDER.glob("*.xls"))
     df_total = []
+    fichas_list = [f.strip() for f in fichas.split(",")] if fichas else None
+
     for archivo_path in archivos:
         try:
             df = cargar_excel_limpio(archivo_path)
-            # Filtrar por fecha si aplica
+            # Filtrar por fecha
             if fecha_inicio and "fecha_juicio" in df.columns:
                 df = df[
                     pd.to_datetime(df["fecha_juicio"], errors="coerce") >= pd.to_datetime(fecha_inicio)
@@ -197,6 +217,23 @@ def generar_reporte(
                 df = df[
                     pd.to_datetime(df["fecha_juicio"], errors="coerce") <= pd.to_datetime(fecha_fin)
                 ]
+            # Filtros adicionales
+            if fichas_list and "ficha" in df.columns:
+                df = df[df["ficha"].astype(str).isin(fichas_list)]
+            if centro and "centro_formacion" in df.columns:
+                df = df[df["centro_formacion"].str.contains(centro, case=False, na=False)]
+            if municipio and "municipio" in df.columns:
+                df = df[df["municipio"].str.contains(municipio, case=False, na=False)]
+            if estudiante:
+                # Buscar por nombre o cédula
+                if "nombre" in df.columns:
+                    df = df[df["nombre"].str.contains(estudiante, case=False, na=False)]
+                if "cedula" in df.columns:
+                    df = df[df["cedula"].astype(str).str.contains(estudiante, case=False, na=False)]
+            if competencia and "competencia" in df.columns:
+                df = df[df["competencia"].str.contains(competencia, case=False, na=False)]
+            if estado and "juicio_evaluacion" in df.columns:
+                df = df[df["juicio_evaluacion"].str.upper() == estado.upper()]
             df_total.append(df)
         except Exception as e:
             logger.error(f"Error procesando {archivo_path.name}: {e}")
@@ -207,8 +244,39 @@ def generar_reporte(
 
     df_final = pd.concat(df_total, ignore_index=True)
 
+    # Si compacto, genera resumen por estudiante
+    if compacto == "true":
+        resumen = []
+        # Agrupa por estudiante (nombre y cédula)
+        agrupado = df_final.groupby(["nombre", "cedula"])
+        for (nombre, cedula), grupo in agrupado:
+            total_competencias = grupo.shape[0]
+            aprobadas = grupo[grupo["juicio_evaluacion"].str.upper() == "APROBADO"].shape[0]
+            reprobadas = grupo[grupo["juicio_evaluacion"].str.upper() == "REPROBADO"].shape[0]
+            por_evaluar = grupo[grupo["juicio_evaluacion"].str.upper() == "POR EVALUAR"].shape[0]
+            # Si hay reprobadas, muestra detalles de la reprobada
+            detalles_reprobada = []
+            if reprobadas > 0:
+                detalles_reprobada = grupo[grupo["juicio_evaluacion"].str.upper() == "REPROBADO"][["competencia", "resultado_aprendizaje", "fecha_juicio"]].to_dict(orient="records")
+            # Si hay por evaluar, muestra detalles
+            detalles_por_evaluar = []
+            if por_evaluar > 0:
+                detalles_por_evaluar = grupo[grupo["juicio_evaluacion"].str.upper() == "POR EVALUAR"][["competencia", "resultado_aprendizaje", "fecha_juicio"]].to_dict(orient="records")
+            resumen.append({
+                "nombre": nombre,
+                "cedula": cedula,
+                "total_competencias": total_competencias,
+                "aprobadas": aprobadas,
+                "reprobadas": reprobadas,
+                "por_evaluar": por_evaluar,
+                "detalles_reprobada": detalles_reprobada,
+                "detalles_por_evaluar": detalles_por_evaluar,
+            })
+        # Convierte a DataFrame para exportar
+        df_final = pd.DataFrame(resumen)
+
     # Si tipo es resumen, solo deja algunas columnas
-    if tipo == "resumen":
+    elif tipo == "resumen":
         cols = [c for c in df_final.columns if c in ["nombre", "centro_formacion", "juicio_evaluacion", "fecha_juicio"]]
         df_final = df_final[cols]
     elif tipo == "programas":
@@ -216,21 +284,136 @@ def generar_reporte(
         df_final = df_final[cols]
     # Si tipo es completo, deja todo
 
-    # Genera archivo temporal
-    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{formato if formato != 'excel' else 'xlsx'}") as tmp:
+    ext = ".xlsx" if formato == "excel" else f".{formato}"
+
+    # Exportación PDF real si se solicita
+    if formato == "pdf":
+        if REPORTLAB_AVAILABLE:
+            buffer = BytesIO()
+            c = canvas.Canvas(buffer, pagesize=letter)
+            width, height = letter
+            c.setFont("Helvetica", 10)
+            y = height - 40
+            # Escribe encabezados
+            for col in df_final.columns:
+                c.drawString(40 + 120 * list(df_final.columns).index(col), y, str(col))
+            y -= 20
+            # Escribe filas
+            for idx, row in df_final.iterrows():
+                for col_idx, col in enumerate(df_final.columns):
+                    c.drawString(40 + 120 * col_idx, y, str(row[col])[:100])
+                y -= 18
+                if y < 40:
+                    c.showPage()
+                    y = height - 40
+            c.save()
+            buffer.seek(0)
+            download_name = f"reporte_{tipo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            headers = {"Content-Disposition": f'attachment; filename="{download_name}"'}
+            return FileResponse(buffer, headers=headers, media_type="application/pdf")
+        else:
+            # Si no hay reportlab, exporta CSV y advierte
+            logger.warning("ReportLab no disponible, exportando CSV en vez de PDF.")
+            ext = ".csv"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                filename = tmp.name
+                df_final.to_csv(filename, index=False)
+            download_name = f"reporte_{tipo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{ext}"
+            headers = {"Content-Disposition": f'attachment; filename="{download_name}"'}
+            return FileResponse(filename, headers=headers, media_type="text/csv")
+
+    # Exportación Excel/CSV normal
+    with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
         filename = tmp.name
         if formato == "excel":
             df_final.to_excel(filename, index=False)
         elif formato == "csv":
             df_final.to_csv(filename, index=False)
-        elif formato == "pdf":
-            # PDF requiere librerías extra, aquí solo exporta CSV y lo renombra
-            df_final.to_csv(filename, index=False)
         else:
             df_final.to_excel(filename, index=False)
 
-    # Nombre sugerido para descarga
-    download_name = f"reporte_{tipo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{formato if formato != 'excel' else 'xlsx'}"
+    download_name = f"reporte_{tipo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{ext}"
     headers = {"Content-Disposition": f'attachment; filename="{download_name}"'}
 
     return FileResponse(filename, headers=headers, media_type="application/octet-stream")
+
+
+# ==============================
+# Endpoint: Juicios filtrados (POST)
+# ==============================
+@router.post("/juicios-filtrados")
+def obtener_juicios_filtrados(filtros: Dict[str, Optional[str]] = Body(...)):
+    """
+    Recibe los filtros como payload y retorna los juicios filtrados.
+    """
+    archivos = list(REPORTES_FOLDER.glob("*.xls"))
+    resultados = []
+
+    aprendiz = filtros.get("aprendiz")
+    regional = filtros.get("regional")
+    centro = filtros.get("centro")
+    jornada = filtros.get("jornada")
+    fecha = filtros.get("fecha")
+
+    for archivo_path in archivos:
+        try:
+            df = cargar_excel_limpio(archivo_path)
+            if aprendiz and "nombre" in df.columns:
+                df = df[df["nombre"].str.contains(aprendiz, case=False, na=False)]
+            if regional and "regional" in df.columns:
+                df = df[df["regional"].str.contains(regional, case=False, na=False)]
+            if centro and "centro_formacion" in df.columns:
+                df = df[df["centro_formacion"].str.contains(centro, case=False, na=False)]
+            if jornada and "jornada" in df.columns:
+                df = df[df["jornada"].str.contains(jornada, case=False, na=False)]
+            if fecha and "fecha_juicio" in df.columns:
+                df["fecha_juicio_str"] = pd.to_datetime(
+                    df["fecha_juicio"], errors="coerce"
+                ).dt.strftime("%Y-%m-%d")
+                df = df[df["fecha_juicio_str"] == fecha]
+            if not df.empty:
+                df = df.where(pd.notna(df), None)
+                for col in df.select_dtypes(include=["datetime64[ns]"]).columns:
+                    df[col] = df[col].dt.strftime("%Y-%m-%d")
+                resultados.extend(df.to_dict(orient="records"))
+        except Exception as e:
+            logger.error(f"❌ Error procesando {archivo_path.name}: {e}")
+            continue
+
+    return {
+        "success": True,
+        "filtros": filtros,
+        "juicios_encontrados": len(resultados),
+        "resultados": resultados,
+    }
+
+
+# ==============================
+# Endpoint: Opciones para filtros (GET)
+# ==============================
+@router.get("/opciones-filtros")
+def obtener_opciones_filtros():
+    """
+    Devuelve listas únicas para los desplegables de regionales, centros y jornadas.
+    """
+    archivos = list(REPORTES_FOLDER.glob("*.xls"))
+    regionales = set()
+    centros = set()
+    jornadas = set()
+    for archivo_path in archivos:
+        try:
+            df = cargar_excel_limpio(archivo_path)
+            if "regional" in df.columns:
+                regionales.update(df["regional"].dropna().unique())
+            if "centro_formacion" in df.columns:
+                centros.update(df["centro_formacion"].dropna().unique())
+            if "jornada" in df.columns:
+                jornadas.update(df["jornada"].dropna().unique())
+        except Exception as e:
+            logger.error(f"Error obteniendo opciones: {e}")
+            continue
+    return {
+        "regionales": sorted(regionales),
+        "centros": sorted(centros),
+        "jornadas": sorted(jornadas),
+    }
